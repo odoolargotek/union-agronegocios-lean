@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Entrenamiento Lean — Unión Agronegocios</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif}
+body{background:#060e06;color:#f5f5f5;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.logo{font-size:11px;color:#a5d6a7;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:24px;font-weight:900;color:#81c784;margin-bottom:4px;text-align:center}
+.sub{font-size:13px;color:#c8e6c9;margin-bottom:32px;text-align:center}
+.cards{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;max-width:700px}
+.card{border-radius:12px;padding:20px 24px;width:300px;border:1px solid;text-decoration:none;display:block;transition:transform .15s}
+.card:hover{transform:translateY(-3px)}
+.card.ford{background:#111726;border-color:#ffb74d}
+.card.lean{background:#07140d;border-color:#81c784}
+.card-icon{font-size:28px;margin-bottom:8px}
+.card-title{font-size:15px;font-weight:900;margin-bottom:4px}
+.card.ford .card-title{color:#ffb74d}
+.card.lean .card-title{color:#81c784}
+.card-desc{font-size:11px;color:#b0bec5;line-height:1.5}
+.badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:999px;margin-top:8px}
+.card.ford .badge{background:#ffb74d;color:#1a1a00}
+.card.lean .badge{background:#81c784;color:#003300}
+footer{margin-top:32px;font-size:10px;color:#546e7a;text-align:center}
+</style>
+</head>
+<body>
+<div class="logo">Unión Agronegocios · Lean Six Sigma White Belt</div>
+<h1>Fábrica de Tarjetas</h1>
+<div class="sub">Dinámica de introducción a Lean — Simuladores interactivos</div>
+<div class="cards">
+  <a href="sim_ford_push.html" class="card ford">
+    <div class="card-icon">🏭</div>
+    <div class="card-title">Simulador Ford Push</div>
+    <div class="card-desc">Sistema tradicional: cada estación produce al máximo y empuja al siguiente proceso. Observa cómo se acumula el WIP.</div>
+    <span class="badge">ETAPA 1 &amp; 2</span>
+  </a>
+  <a href="sim_lean_pull.html" class="card lean">
+    <div class="card-icon">🎯</div>
+    <div class="card-title">Simulador Lean Pull</div>
+    <div class="card-desc">Sistema Kanban: cada estación produce solo cuando el siguiente proceso lo necesita. Flujo controlado, WIP limitado.</div>
+    <span class="badge">ETAPA 3 — LEAN</span>
+  </a>
+</div>
+<footer>Largotek SRL · Entrenamiento Lean · 2026</footer>
+</body>
+</html>

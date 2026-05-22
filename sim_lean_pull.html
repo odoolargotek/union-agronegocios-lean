@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Simulador Lean Pull Kanban — Unión Agronegocios</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif}
+body{background:#040b11;color:#f5f5f5;min-height:100vh}
+.header{padding:10px 14px;background:#10251b;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1b5e20}
+.title{font-size:15px;font-weight:900;color:#81c784}
+.subtitle{font-size:11px;color:#c8e6c9}
+.btn-row{display:flex;gap:8px;align-items:center}
+.btn{padding:6px 14px;border-radius:999px;border:1px solid #81c784;background:#0c1b14;color:#c8e6c9;font-size:11px;font-weight:700;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:default}
+.tick{font-size:11px;color:#a5d6a7;margin-left:4px}
+.main{max-width:900px;margin:0 auto;padding:12px 10px 20px}
+.info{font-size:11px;color:#c8e6c9;margin-bottom:8px}
+.line{position:relative;border-radius:10px;padding:10px;background:#07140d;margin-bottom:10px;border:1px solid #1b5e20}
+.line-title{font-size:11px;font-weight:700;margin-bottom:4px;color:#81c784}
+.track{position:relative;height:90px;margin-top:4px;border-radius:8px;background:linear-gradient(90deg,#1b5e20,#05130a);overflow:hidden}
+.station{position:absolute;top:8px;width:80px;height:72px;border-radius:8px;background:#0e2a18;border:1px solid #43a047;text-align:center;font-size:10px;color:#e8f5e9;padding-top:4px}
+.station span{display:block;font-size:9px;color:#a5d6a7}
+.item{position:absolute;width:18px;height:18px;border-radius:4px;background:#c5e1a5;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#1b5e20;box-shadow:0 0 6px rgba(0,0,0,.6)}
+.item.wip{background:#ffeb3b;color:#33691e}
+.item.done{background:#66bb6a;color:#1b5e20}
+.kanban{position:absolute;width:12px;height:18px;border-radius:3px;background:#f48fb1;border:1px solid #ad1457;box-shadow:0 0 6px rgba(244,143,177,.7)}
+.timeline{display:flex;justify-content:space-between;font-size:9px;color:#a5d6a7;margin-top:4px}
+.legend{display:flex;gap:8px;margin-top:4px;font-size:9px;color:#c8e6c9}
+.legend-box{width:10px;height:10px;border-radius:3px;display:inline-block}
+.metrics{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.metric{flex:1;min-width:120px;border-radius:6px;background:#050f09;border:1px solid #1b5e20;padding:6px;font-size:10px}
+.metric-label{font-size:9px;color:#a5d6a7}
+.metric-value{font-size:13px;font-weight:900;color:#81c784}
+.log{margin-top:8px;border-radius:6px;background:#050f09;border:1px solid #1b5e20;padding:6px;max-height:150px;overflow:auto;font-size:9px;line-height:1.5;color:#c8e6c9}
+.log b{color:#81c784}
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <div class="title">Simulador Lean Pull Kanban — Unión Agronegocios</div>
+    <div class="subtitle">Corte → Doblado → Soldadura → Calidad → Ensamble (con Kanban, WIP máx 2)</div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" id="btnPlay">▶ Iniciar / Continuar</button>
+    <button class="btn" id="btnPause">⏸ Pausa</button>
+    <button class="btn" id="btnReset">➲ Reset</button>
+    <span class="tick">Minuto: <span id="minLbl">0</span> / 10</span>
+  </div>
+</div>
+<div class="main">
+  <div class="info">Aquí cada estación solo puede producir cuando recibe una tarjeta Kanban del proceso siguiente. El WIP entre estaciones se limita a 2 unidades. Observa cómo el flujo es más suave y el sistema responde mejor a cambios.</div>
+  <div class="line">
+    <div class="line-title">Flujo Lean Pull con Kanban</div>
+    <div class="track" id="track"></div>
+    <div class="timeline"><span>Inicio</span><span>Minuto 5</span><span>Minuto 10</span></div>
+    <div class="legend">
+      <span><span class="legend-box" style="background:#c5e1a5"></span>En proceso</span>
+      <span><span class="legend-box" style="background:#ffeb3b"></span>WIP (máx 2)</span>
+      <span><span class="legend-box" style="background:#66bb6a"></span>Terminada</span>
+      <span><span class="legend-box" style="background:#f48fb1"></span>Tarjeta Kanban</span>
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Unidades terminadas</div><div class="metric-value" id="mDone">0</div></div>
+      <div class="metric"><div class="metric-label">WIP total entre procesos</div><div class="metric-value" id="mWip">0</div></div>
+      <div class="metric"><div class="metric-label">Máx. WIP alcanzado</div><div class="metric-value" id="mWipMax">0</div></div>
+    </div>
+  </div>
+  <div class="log" id="log"></div>
+</div>
+<script>
+const tiempos = {"Corte":1,"Doblado":1.5,"Soldadura":2,"Calidad":1,"Ensamble":0.5};
+const estaciones = ["Corte","Doblado","Soldadura","Calidad","Ensamble"];
+const limit = 2;
+let minuto = 0, running=false, timer=null;
+const track=document.getElementById('track');
+const logEl=document.getElementById('log');
+const width=820, left0=20, step=(width-60)/(estaciones.length-1);
+const stationPos={};
+estaciones.forEach((e,i)=>{
+  const d=document.createElement('div');
+  d.className='station';
+  d.style.left=(left0+i*step)+'px';
+  d.innerHTML=e+'<span>'+tiempos[e]+' min/un.</span>';
+  track.appendChild(d);
+  stationPos[e]=left0+i*step+30;
+});
+let items=[], nextId=1, maxWip=0;
+const kanbans=[];
+function crearKanban(x){
+  const k=document.createElement('div');
+  k.className='kanban';
+  k.style.left=(x-6)+'px';
+  k.style.top='10px';
+  track.appendChild(k);
+  kanbans.push(k);
+}
+crearKanban((stationPos["Doblado"]+stationPos["Corte"])/2);
+crearKanban((stationPos["Doblado"]+stationPos["Corte"])/2+16);
+crearKanban((stationPos["Soldadura"]+stationPos["Doblado"])/2);
+crearKanban((stationPos["Soldadura"]+stationPos["Doblado"])/2+16);
+crearKanban((stationPos["Calidad"]+stationPos["Soldadura"])/2);
+crearKanban((stationPos["Calidad"]+stationPos["Soldadura"])/2+16);
+function log(msg){logEl.innerHTML='<b>['+minuto+' min]</b> '+msg+'<br>'+logEl.innerHTML;}
+function tick(){
+  if(minuto>=10){running=false;clearInterval(timer);return;}
+  minuto++;document.getElementById('minLbl').textContent=minuto;
+  items.forEach(it=>{
+    const st=estaciones[it.etapaIdx];
+    it.el.classList.remove('wip','done');
+    if(st==="Ensamble"){it.el.classList.add('done');it.el.style.top='60px';}
+    const x=stationPos[st];
+    it.el.style.left=(x-9)+'px';
+  });
+  const countAt = st => items.filter(i=>estaciones[i.etapaIdx]===st).length;
+  if(countAt("Calidad")>0){
+    const it=items.find(i=>estaciones[i.etapaIdx]==="Calidad");
+    if(it){it.etapaIdx=4;}
+  }
+  if(countAt("Calidad")<limit && countAt("Soldadura")>0){
+    const it=items.find(i=>estaciones[i.etapaIdx]==="Soldadura");
+    if(it){it.etapaIdx=3;}
+  }
+  if(countAt("Soldadura")<limit && countAt("Doblado")>0){
+    const it=items.find(i=>estaciones[i.etapaIdx]==="Doblado");
+    if(it){it.etapaIdx=2;}
+  }
+  if(countAt("Doblado")<limit && countAt("Corte")>0){
+    const it=items.find(i=>estaciones[i.etapaIdx]==="Corte");
+    if(it){it.etapaIdx=1;}
+  }
+  if(countAt("Corte")<limit){
+    const el=document.createElement('div');
+    el.className='item';
+    el.textContent=nextId;
+    el.style.left=(stationPos["Corte"]-9)+'px';
+    el.style.top=(26+Math.random()*26)+'px';
+    track.appendChild(el);
+    items.push({id:nextId,etapaIdx:0,el});
+    nextId++;
+  }
+  let wipCD=0,wipDS=0,wipSC=0;
+  items.forEach(it=>{
+    const s=estaciones[it.etapaIdx];
+    if(s==="Doblado"){it.el.classList.add('wip');wipCD++;}
+    else if(s==="Soldadura"){it.el.classList.add('wip');wipDS++;}
+    else if(s==="Calidad"){it.el.classList.add('wip');wipSC++;}
+  });
+  const wipTot=wipCD+wipDS+wipSC;
+  maxWip=Math.max(maxWip,wipTot);
+  document.getElementById('mDone').textContent=items.filter(i=>estaciones[i.etapaIdx]==="Ensamble").length;
+  document.getElementById('mWip').textContent=wipTot;
+  document.getElementById('mWipMax').textContent=maxWip;
+  log('Unid terminadas: '+document.getElementById('mDone').textContent+' | WIP total: '+wipTot);
+}
+function start(){if(running)return;running=true;timer=setInterval(tick,800);}
+function pause(){running=false;clearInterval(timer);}
+function reset(){
+  pause();minuto=0;nextId=1;maxWip=0;
+  items.forEach(i=>i.el.remove());items=[];
+  document.getElementById('minLbl').textContent='0';
+  document.getElementById('mDone').textContent='0';
+  document.getElementById('mWip').textContent='0';
+  document.getElementById('mWipMax').textContent='0';
+  logEl.innerHTML='';
+  location.reload();
+}
+btnPlay.onclick=start;btnPause.onclick=pause;btnReset.onclick=reset;
+</script>
+</body>
+</html>
