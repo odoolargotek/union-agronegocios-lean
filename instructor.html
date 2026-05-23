@@ -21,20 +21,17 @@
     .btn-orange { background: #d29922; color:#fff; } .btn-orange:hover { background:#e3b341; }
     .btn-purple { background: #6f42c1; color:#fff; } .btn-purple:hover { background:#8957e5; }
     .stage-controls { display:flex; gap:6px; flex-wrap:wrap; }
-    /* Tabs */
-    .tabs { display:flex; gap:6px; margin-bottom:16px; }
+    .tabs { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
     .tab { padding:7px 16px; border-radius:6px; border:1px solid #30363d; background:#161b22;
            color:#aaa; cursor:pointer; font-size:0.82rem; font-weight:600; }
     .tab.active { background:#1f6feb; color:#fff; border-color:#1f6feb; }
     .tab-content { display:none; }
     .tab-content.active { display:block; }
-    /* Global metrics */
     .global-metrics { background:#161b22; border-radius:10px; padding:16px; margin-bottom:20px;
                       display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; }
     .gm { text-align:center; background:#0d1117; border-radius:8px; padding:10px; }
     .gm .val { font-size:1.8rem; font-weight:700; color:#f0c040; }
     .gm .lbl { font-size:0.7rem; color:#888; margin-top:2px; }
-    /* Equipos grid */
     .equipos-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
     .equipo-card { background:#161b22; border-radius:10px; padding:16px; border:1px solid #30363d; }
     .equipo-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
@@ -60,12 +57,10 @@
     .defecto-btn { font-size:0.68rem; padding:3px 7px; border-radius:4px; border:1px solid #da3633;
                    background:transparent; color:#da3633; cursor:pointer; margin-top:6px; }
     .defecto-btn:hover { background:#da3633; color:#fff; }
-    /* ===== TIEMPOS ===== */
     .tiempos-section { margin-top:0; }
     .tiempos-equipo { background:#161b22; border-radius:10px; padding:16px;
                       border:1px solid #30363d; margin-bottom:16px; }
     .tiempos-equipo h3 { color:#f0c040; font-size:0.95rem; margin-bottom:12px; }
-    /* Resumen de tiempos promedio por operario */
     .tiempos-resumen { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
                        gap:8px; margin-bottom:14px; }
     .tr-card { background:#0d1117; border-radius:8px; padding:10px; text-align:center; }
@@ -74,7 +69,6 @@
     .tr-card .tr-ejec { font-size:1.1rem; font-weight:700; }
     .tr-card .tr-espera { font-size:0.72rem; color:#f0c040; margin-top:2px; }
     .tr-card .tr-lbl { font-size:0.58rem; color:#666; }
-    /* Tabla detalle tarjetas */
     .tiempos-tabla-wrap { overflow-x:auto; }
     table.tiempos-tabla { width:100%; border-collapse:collapse; font-size:0.72rem; }
     table.tiempos-tabla th { background:#0d1117; color:#aaa; padding:5px 8px;
@@ -86,16 +80,75 @@
     .t-slow { color:#e94560; font-weight:700; }
     .t-wait { color:#58a6ff; }
     .t-na   { color:#444; }
-    /* Barra de espera vs ejecucion */
     .t-bar { display:flex; height:6px; border-radius:3px; overflow:hidden; width:60px; margin:0 auto; }
     .t-bar-ejec  { background:#28a745; }
     .t-bar-wait  { background:#58a6ff; }
-    /* Lead time badge */
     .lt-badge { display:inline-block; padding:2px 7px; border-radius:8px;
                 font-size:0.7rem; font-weight:700; }
     .lt-fast { background:#28a74522; color:#28a745; }
     .lt-mid  { background:#f0c04022; color:#f0c040; }
     .lt-slow { background:#e9456022; color:#e94560; }
+
+    /* ===== VSM ===== */
+    .vsm-section { padding-bottom: 40px; }
+    .vsm-header { display:flex; align-items:center; justify-content:space-between;
+                  flex-wrap:wrap; gap:10px; margin-bottom:20px; }
+    .vsm-header h2 { font-size:1rem; color:#f0c040; }
+    .vsm-legend { display:flex; gap:14px; flex-wrap:wrap; }
+    .vsm-leg-item { display:flex; align-items:center; gap:5px; font-size:0.72rem; color:#aaa; }
+    .vsm-leg-dot { width:10px; height:10px; border-radius:2px; }
+
+    /* Fila de comparación por etapa */
+    .vsm-etapa-block { background:#161b22; border:1px solid #30363d; border-radius:12px;
+                       padding:18px 20px; margin-bottom:20px; }
+    .vsm-etapa-title { font-size:0.88rem; font-weight:700; margin-bottom:16px;
+                       display:flex; align-items:center; gap:10px; }
+    .vsm-etapa-num { width:28px; height:28px; border-radius:6px; background:#e94560;
+                     display:inline-flex; align-items:center; justify-content:center;
+                     font-size:0.85rem; font-weight:900; color:#fff; }
+    .vsm-etapa-num.e2 { background:#d29922; }
+    .vsm-etapa-num.e3 { background:#28a745; }
+
+    /* Flujo de proceso VSM */
+    .vsm-flow { display:flex; align-items:flex-start; gap:0; overflow-x:auto; padding-bottom:8px; }
+    .vsm-node { display:flex; flex-direction:column; align-items:center; min-width:90px; }
+    .vsm-box { background:#0d1117; border:1px solid #30363d; border-radius:8px;
+               padding:8px 10px; text-align:center; width:82px; }
+    .vsm-box-title { font-size:0.62rem; font-weight:700; margin-bottom:4px; }
+    .vsm-box-ct { font-size:1rem; font-weight:900; }
+    .vsm-box-wait { font-size:0.65rem; color:#58a6ff; margin-top:2px; }
+    .vsm-box-lbl { font-size:0.55rem; color:#666; }
+    .vsm-conn { display:flex; flex-direction:column; align-items:center;
+                justify-content:flex-start; padding-top:18px; min-width:36px; }
+    .vsm-arrow { color:#555; font-size:1rem; }
+    .vsm-wip-bubble { background:#f0c04022; border:1px solid #f0c04066;
+                      color:#f0c040; border-radius:20px; font-size:0.6rem;
+                      font-weight:700; padding:2px 6px; margin-top:3px; white-space:nowrap; }
+
+    /* KPI bar debajo del flujo */
+    .vsm-kpis { display:grid; grid-template-columns:repeat(auto-fill,minmax(100px,1fr));
+                gap:8px; margin-top:16px; }
+    .vsm-kpi { background:#0d1117; border-radius:8px; padding:8px; text-align:center; }
+    .vsm-kpi .kval { font-size:1.2rem; font-weight:900; }
+    .vsm-kpi .klbl { font-size:0.6rem; color:#888; margin-top:2px; }
+
+    /* Barra de eficiencia del flujo */
+    .vsm-eff-bar-wrap { margin-top:14px; }
+    .vsm-eff-label { font-size:0.7rem; color:#aaa; margin-bottom:5px;
+                     display:flex; justify-content:space-between; }
+    .vsm-eff-track { height:10px; background:#21262d; border-radius:5px; overflow:hidden; }
+    .vsm-eff-fill  { height:10px; border-radius:5px; transition: width 0.5s; }
+
+    /* Tabla comparativa inter-etapas */
+    .vsm-compare-table { width:100%; border-collapse:collapse; font-size:0.8rem; margin-top:8px; }
+    .vsm-compare-table th { text-align:left; padding:8px 12px; font-size:0.7rem;
+                             color:#aaa; border-bottom:1px solid #30363d; }
+    .vsm-compare-table td { padding:8px 12px; border-bottom:1px solid #21262d; }
+    .vsm-compare-table tr:last-child td { border-bottom:none; }
+    .vsm-improve { color:#28a745; font-weight:700; }
+    .vsm-worse   { color:#e94560; font-weight:700; }
+    .vsm-neutral { color:#aaa; }
+    .vsm-pending { color:#444; font-style:italic; }
   </style>
 </head>
 <body>
@@ -146,6 +199,7 @@
   <div class="tabs">
     <div class="tab active" onclick="showTab('tab-produccion', this)">🏭 Producción</div>
     <div class="tab" onclick="showTab('tab-tiempos', this)">⏱ Tiempos</div>
+    <div class="tab" onclick="showTab('tab-vsm', this)">📊 VSM</div>
   </div>
 
   <div id="tab-produccion" class="tab-content active">
@@ -157,6 +211,12 @@
   <div id="tab-tiempos" class="tab-content">
     <div class="tiempos-section" id="tiempos-section">
       <p style="color:#888;font-size:0.9rem">Conecta una sesión para ver los tiempos.</p>
+    </div>
+  </div>
+
+  <div id="tab-vsm" class="tab-content">
+    <div class="vsm-section" id="vsm-section">
+      <p style="color:#888;font-size:0.9rem">Conecta una sesión para ver el VSM.</p>
     </div>
   </div>
 
@@ -195,6 +255,7 @@
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       document.getElementById(id).classList.add('active');
       el.classList.add('active');
+      if (id === 'tab-vsm' && Object.keys(globalData).length) renderVSM(globalData);
     };
 
     window.conectar = function() {
@@ -205,6 +266,7 @@
         etapaActual = globalData.etapaActiva||1;
         renderAll(globalData);
         renderTiempos(globalData);
+        renderVSM(globalData);
       });
     };
 
@@ -244,6 +306,7 @@
       await remove(ref(db,`sesiones/${sesion}`));
       document.getElementById('equipos-grid').innerHTML='<p style="color:#888">Sesión reseteada.</p>';
       document.getElementById('tiempos-section').innerHTML='<p style="color:#888">Sesión reseteada.</p>';
+      document.getElementById('vsm-section').innerHTML='<p style="color:#888">Sesión reseteada.</p>';
     };
 
     window.registrarDefecto = async function(eq) {
@@ -252,60 +315,264 @@
       await set(mRef,(snap.val()||0)+1);
     };
 
-    // ───────────────────────────────────────────────
-    // CALCULOS DE TIEMPO
-    // ───────────────────────────────────────────────
+    // ── UTILS ──
     function fmt(ms) {
       if (ms === null || ms === undefined) return '—';
       const s = Math.round(ms/1000);
       if (s < 60) return s+'s';
       return Math.floor(s/60)+'m '+String(s%60).padStart(2,'0')+'s';
     }
-
     function tClass(ms) {
       if (!ms) return 't-na';
       if (ms < 15000)  return 't-fast';
       if (ms < 45000)  return 't-mid';
       return 't-slow';
     }
-
-    // Para cada tarjeta calcula tiempos por operario
     function calcTiemposTarjeta(t) {
       const resultado = {};
       ORDEN.forEach((color, idx) => {
         const misPosiciones = POSICIONES.filter(p=>p.color===color);
-        // Timestamps de etiquetas pegadas por este color
         const tsPegadas = misPosiciones.map(p => t[p.id]?.ts).filter(Boolean);
         const tsPrimera = tsPegadas.length ? Math.min(...tsPegadas) : null;
-
         const tsEntrego = t[`entregado_${color}`] || null;
-        // Ejecucion = desde que pego la primera etiqueta hasta que entrego
         const ejec = (tsPrimera && tsEntrego) ? tsEntrego - tsPrimera : null;
-
-        // Espera = desde que el anterior entrego hasta que este pego su primera etiqueta
         let espera = null;
         if (idx > 0) {
           const tsAnterior = t[`entregado_${ORDEN[idx-1]}`] || null;
           if (tsAnterior && tsPrimera) espera = tsPrimera - tsAnterior;
         } else {
-          // Amarillo: espera desde tsCreada hasta primera etiqueta
           if (t.tsCreada && tsPrimera) espera = tsPrimera - t.tsCreada;
         }
-
         resultado[color] = { ejec, espera, tsPrimera, tsEntrego };
       });
-
-      // Lead time: desde primera etiqueta amarillo hasta entregado_verde
       const tsInicioAma = resultado.amarillo.tsPrimera;
       const tsFinVerde  = resultado.verde.tsEntrego;
       resultado.leadTime = (tsInicioAma && tsFinVerde) ? tsFinVerde - tsInicioAma : null;
-
       return resultado;
     }
 
-    // ───────────────────────────────────────────────
-    // RENDER TIEMPOS
-    // ───────────────────────────────────────────────
+    // ── VSM ──
+    function calcVSMEtapa(data, etapa) {
+      const equipos = data.equipos||{};
+      let allCT = { amarillo:[], naranja:[], rojo:[], verde:[] };
+      let allEspera = { amarillo:[], naranja:[], rojo:[], verde:[] };
+      let allWIP = [];
+      let allLT = [];
+      let totalEntregadas = 0, totalDefectos = 0;
+
+      for (let eq=1; eq<=6; eq++) {
+        const tarjetas = ((equipos[eq]||{}).etapas||{})[etapa]?.tarjetas||{};
+        const tVals = Object.values(tarjetas);
+        if (!tVals.length) continue;
+
+        // WIP instantáneo
+        const wip = tVals.filter(t => POSICIONES.some(p=>t[p.id]!==undefined) && !t.aprobada).length;
+        allWIP.push(wip);
+
+        totalEntregadas += (equipos[eq]?.metricas?.entregadas||0);
+        totalDefectos   += (equipos[eq]?.metricas?.defectos||0);
+
+        tVals.forEach(t => {
+          const tt = calcTiemposTarjeta(t);
+          if (tt.leadTime) allLT.push(tt.leadTime);
+          ORDEN.forEach(color => {
+            if (tt[color].ejec)   allCT[color].push(tt[color].ejec);
+            if (tt[color].espera) allEspera[color].push(tt[color].espera);
+          });
+        });
+      }
+
+      const avg = arr => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : null;
+
+      const ct = {};
+      const espera = {};
+      ORDEN.forEach(c => { ct[c] = avg(allCT[c]); espera[c] = avg(allEspera[c]); });
+
+      const ltProm = avg(allLT);
+      const wipProm = avg(allWIP);
+
+      // Tiempo de valor agregado = suma CT operarios
+      const tva = ORDEN.reduce((s,c) => s + (ct[c]||0), 0);
+      // Tiempo de espera total = suma esperas
+      const tNVA = ORDEN.reduce((s,c) => s + (espera[c]||0), 0);
+      const eficiencia = (tva + tNVA) > 0 ? Math.round(tva / (tva + tNVA) * 100) : null;
+
+      const defRate = (totalEntregadas + totalDefectos) > 0
+        ? Math.round(totalDefectos / (totalEntregadas + totalDefectos) * 100) : null;
+
+      return { ct, espera, ltProm, wipProm, tva, tNVA, eficiencia, totalEntregadas, totalDefectos, defRate };
+    }
+
+    function vsmNodeColor(color) {
+      return COLORES[color] || '#888';
+    }
+
+    function renderVSM(data) {
+      const etapaActiva = data.etapaActiva||1;
+      const etapaNames = {
+        1: { label:'Etapa 1', sub:'Producción libre — lotes variables', cls:'', nota:'⚠️ Estado actual (sin Lean)' },
+        2: { label:'Etapa 2', sub:'Lote de 2 tarjetas', cls:'e2', nota:'📦 Primera mejora' },
+        3: { label:'Etapa 3', sub:'Flujo unitario — one-piece-flow', cls:'e3', nota:'✅ Lean puro' }
+      };
+
+      // Calculamos datos para las 3 etapas
+      const vsmData = {};
+      for (let e=1; e<=3; e++) vsmData[e] = calcVSMEtapa(data, e);
+
+      // ── Comparativa global ──
+      let compareRows = '';
+      const metricas = [
+        { lbl: 'Lead Time promedio', key: 'ltProm', fmt: fmt, mejorEs: 'menor' },
+        { lbl: 'WIP promedio',       key: 'wipProm', fmt: v => v!=null?v+'u':'—', mejorEs: 'menor' },
+        { lbl: 'Eficiencia flujo',   key: 'eficiencia', fmt: v => v!=null?v+'%':'—', mejorEs: 'mayor' },
+        { lbl: 'Tasa de defectos',   key: 'defRate', fmt: v => v!=null?v+'%':'—', mejorEs: 'menor' },
+      ];
+
+      metricas.forEach(m => {
+        const vals = [vsmData[1][m.key], vsmData[2][m.key], vsmData[3][m.key]];
+        const cells = vals.map((v, idx) => {
+          if (v === null) return `<td class="vsm-pending">pendiente</td>`;
+          // comparar con etapa anterior
+          const prev = idx > 0 ? vals[idx-1] : null;
+          let cls = 'vsm-neutral';
+          if (prev !== null && v !== null) {
+            const mejor = m.mejorEs === 'menor' ? v < prev : v > prev;
+            cls = mejor ? 'vsm-improve' : 'vsm-worse';
+          }
+          const arrow = (prev !== null && v !== null)
+            ? (m.mejorEs==='menor' ? (v<prev?'↓':'↑') : (v>prev?'↑':'↓')) : '';
+          return `<td class="${cls}">${m.fmt(v)} ${arrow}</td>`;
+        });
+        compareRows += `<tr><td style="color:#aaa;font-size:0.75rem">${m.lbl}</td>${cells.join('')}</tr>`;
+      });
+
+      const compareHTML = `
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px 20px;margin-bottom:24px;">
+          <div style="font-size:0.88rem;font-weight:700;color:#f0c040;margin-bottom:12px;">📈 Comparativa entre etapas</div>
+          <div style="overflow-x:auto;">
+            <table class="vsm-compare-table">
+              <thead><tr>
+                <th>Métrica</th>
+                <th style="color:#e94560">Etapa 1</th>
+                <th style="color:#d29922">Etapa 2</th>
+                <th style="color:#28a745">Etapa 3</th>
+              </tr></thead>
+              <tbody>${compareRows}</tbody>
+            </table>
+          </div>
+        </div>`;
+
+      // ── Una sección VSM por etapa ──
+      let etapasHTML = '';
+      for (let e=1; e<=3; e++) {
+        const d = vsmData[e];
+        const info = etapaNames[e];
+        const hasData = d.totalEntregadas > 0 || ORDEN.some(c => d.ct[c] !== null);
+
+        // Flujo de procesos
+        const nodes = ORDEN.map((color, idx) => {
+          const ct = d.ct[color];
+          const esp = d.espera[color];
+          const nodeColor = vsmNodeColor(color);
+          const ctStr = ct ? fmt(ct) : '—';
+          const espStr = esp ? fmt(esp) : '—';
+          const conn = idx < ORDEN.length - 1 ? `
+            <div class="vsm-conn">
+              <div class="vsm-arrow">→</div>
+              <div class="vsm-wip-bubble">espera<br>${espStr}</div>
+            </div>` : '';
+          const node = `
+            <div class="vsm-node">
+              <div class="vsm-box" style="border-color:${nodeColor}44">
+                <div class="vsm-box-title" style="color:${nodeColor}">${color.charAt(0).toUpperCase()+color.slice(1)}</div>
+                <div class="vsm-box-ct" style="color:${ct?'#eee':'#444'}">${ctStr}</div>
+                <div class="vsm-box-lbl">C/T prom.</div>
+              </div>
+            </div>`;
+          return node + conn;
+        }).join('');
+
+        // Barra de eficiencia
+        const eff = d.eficiencia;
+        const effColor = eff===null?'#444':eff>=50?'#28a745':eff>=25?'#d29922':'#e94560';
+        const effHTML = `
+          <div class="vsm-eff-bar-wrap">
+            <div class="vsm-eff-label">
+              <span>Eficiencia del flujo (VA / Total)</span>
+              <span style="color:${effColor};font-weight:700">${eff!==null?eff+'%':'sin datos'}</span>
+            </div>
+            <div class="vsm-eff-track">
+              <div class="vsm-eff-fill" style="width:${eff||0}%;background:${effColor}"></div>
+            </div>
+          </div>`;
+
+        // KPIs de la etapa
+        const kpisHTML = `
+          <div class="vsm-kpis">
+            <div class="vsm-kpi">
+              <div class="kval" style="color:#28a745">${fmt(d.tva)}</div>
+              <div class="klbl">⚡ Tiempo VA</div>
+            </div>
+            <div class="vsm-kpi">
+              <div class="kval" style="color:#58a6ff">${fmt(d.tNVA)}</div>
+              <div class="klbl">⏳ Tiempo NVA (esperas)</div>
+            </div>
+            <div class="vsm-kpi">
+              <div class="kval" style="color:#f0c040">${fmt(d.ltProm)}</div>
+              <div class="klbl">🏁 Lead Time prom.</div>
+            </div>
+            <div class="vsm-kpi">
+              <div class="kval" style="color:#f0c040">${d.wipProm!=null?d.wipProm+'u':'—'}</div>
+              <div class="klbl">📦 WIP prom.</div>
+            </div>
+            <div class="vsm-kpi">
+              <div class="kval" style="color:#e94560">${d.defRate!=null?d.defRate+'%':'—'}</div>
+              <div class="klbl">💥 Tasa defectos</div>
+            </div>
+            <div class="vsm-kpi">
+              <div class="kval" style="color:#28a745">${d.totalEntregadas}</div>
+              <div class="klbl">✅ Entregadas</div>
+            </div>
+          </div>`;
+
+        const activeBadge = e === etapaActiva
+          ? `<span style="background:#1f6feb22;color:#58a6ff;border:1px solid #1f6feb55;border-radius:10px;padding:2px 8px;font-size:0.65rem;font-weight:600;margin-left:8px;">▶ ACTIVA</span>` : '';
+
+        etapasHTML += `
+          <div class="vsm-etapa-block">
+            <div class="vsm-etapa-title">
+              <span class="vsm-etapa-num ${info.cls}">${e}</span>
+              <span>${info.label} — ${info.sub}</span>
+              ${activeBadge}
+              <span style="margin-left:auto;font-size:0.72rem;color:#888">${info.nota}</span>
+            </div>
+            ${hasData ? `
+              <div style="overflow-x:auto;margin-bottom:14px;">
+                <div class="vsm-flow" style="min-width:420px;">${nodes}</div>
+              </div>
+              ${kpisHTML}
+              ${effHTML}
+            ` : `<p style="color:#555;font-size:0.82rem;padding:10px 0">Sin datos aún — esta etapa no ha sido corrida.</p>`}
+          </div>`;
+      }
+
+      const html = `
+        <div class="vsm-header">
+          <h2>📊 Value Stream Map — comparativo en vivo</h2>
+          <div class="vsm-legend">
+            <div class="vsm-leg-item"><div class="vsm-leg-dot" style="background:#28a745"></div> Tiempo VA</div>
+            <div class="vsm-leg-item"><div class="vsm-leg-dot" style="background:#58a6ff"></div> Espera / NVA</div>
+            <div class="vsm-leg-item"><div class="vsm-leg-dot" style="background:#f0c040"></div> WIP / Lead Time</div>
+            <div class="vsm-leg-item"><div class="vsm-leg-dot" style="background:#e94560"></div> Defectos</div>
+          </div>
+        </div>
+        ${compareHTML}
+        ${etapasHTML}`;
+
+      document.getElementById('vsm-section').innerHTML = html;
+    }
+
+    // ── TIEMPOS ──
     function renderTiempos(data) {
       const equipos = data.equipos||{};
       const etapa   = data.etapaActiva||1;
@@ -317,15 +584,13 @@
         const ids = Object.keys(tarjetas);
         if (!ids.length) continue;
 
-        // Calcular tiempos por tarjeta
         const filas = ids
           .sort((a,b)=>(tarjetas[a].numero||0)-(tarjetas[b].numero||0))
           .map(id => ({ id, t: tarjetas[id], tt: calcTiemposTarjeta(tarjetas[id]) }))
-          .filter(x => x.tt.leadTime || ORDEN.some(c => x.tt[c].ejec)); // solo tarjetas con algo calculable
+          .filter(x => x.tt.leadTime || ORDEN.some(c => x.tt[c].ejec));
 
         if (!filas.length) continue;
 
-        // Promedios por operario
         const promedios = {};
         ORDEN.forEach(color => {
           const ejecArr   = filas.map(f=>f.tt[color].ejec).filter(Boolean);
@@ -340,7 +605,6 @@
         const ltProm = ltArr.length ? Math.round(ltArr.reduce((a,b)=>a+b,0)/ltArr.length) : null;
         if (ltProm) allLeadTimes.push(ltProm);
 
-        // Cards resumen por operario
         const resumenHtml = ORDEN.map(color => `
           <div class="tr-card">
             <div><span class="color-dot" style="background:${COLORES[color]}"></span></div>
@@ -351,7 +615,6 @@
             <div class="tr-lbl">espera prom.</div>
           </div>`).join('');
 
-        // Tabla detalle
         const theadCols = ORDEN.map(c =>
           `<th style="color:${COLORES[c]}">${c.charAt(0).toUpperCase()+c.slice(1)}<br>
            <span style="font-weight:400;font-size:0.62rem">ejec / espera</span></th>`
@@ -394,20 +657,16 @@
         </div>`;
       }
 
-      if (!html) html = '<p style="color:#888;font-size:0.9rem">Aún no hay datos de tiempo. Los tiempos aparecen cuando los operarios pegan etiquetas y entregan.</p>';
-
+      if (!html) html = '<p style="color:#888;font-size:0.9rem">Aún no hay datos de tiempo.</p>';
       document.getElementById('tiempos-section').innerHTML = html;
 
-      // Lead time global
       if (allLeadTimes.length) {
         const ltGlobal = Math.round(allLeadTimes.reduce((a,b)=>a+b,0)/allLeadTimes.length);
         document.getElementById('g-lt').textContent = fmt(ltGlobal);
       }
     }
 
-    // ───────────────────────────────────────────────
-    // RENDER PRODUCCION (igual que antes)
-    // ───────────────────────────────────────────────
+    // ── PRODUCCIÓN ──
     function calcWIP(tarjetas) {
       return Object.values(tarjetas).filter(t => {
         return POSICIONES.some(p => t[p.id] !== undefined) && !t.aprobada;
@@ -474,7 +733,7 @@
           `<span class="jugador-badge" style="border-left-color:${COLORES[j.rol]||'#888'}">${j.nombre||j.rol}</span>`
         ).join('');
 
-        const scoreColor = avgScore===null?'#888':avgScore>=85?'#28a745':avgScore>=60?'#d29922':'#e94560';
+        const scoreColor = avgScore===null?'#888':avgScore>=95?'#28a745':avgScore>=70?'#d29922':'#e94560';
 
         html+=`<div class="equipo-card">
           <div class="equipo-header">
