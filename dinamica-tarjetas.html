@@ -6,124 +6,100 @@
   <title>Fábrica de Tarjetas — Jugador</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 16px; }
+    body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh;
+           display: flex; flex-direction: column; align-items: center; padding: 16px; }
     h1 { font-size: 1.3rem; color: #f0c040; text-align: center; margin-bottom: 4px; }
     .subtitle { font-size: 0.8rem; color: #aaa; margin-bottom: 20px; text-align: center; }
-
-    /* LOGIN */
-    .login-card { background: #16213e; border-radius: 12px; padding: 24px; width: 100%; max-width: 420px; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
+    .login-card { background: #16213e; border-radius: 12px; padding: 24px; width: 100%; max-width: 420px; }
     label { display: block; font-size: 0.78rem; color: #aaa; margin-bottom: 5px; }
-    input, select { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid #333; background: #0f3460; color: #fff; font-size: 0.95rem; margin-bottom: 14px; }
-    button.primary { width: 100%; padding: 11px; border-radius: 8px; border: none; background: #e94560; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; }
-    button.primary:hover { background: #c73652; }
-
-    /* HUD */
+    input, select { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid #333;
+                    background: #0f3460; color: #fff; font-size: 0.95rem; margin-bottom: 14px; }
+    button.primary { width: 100%; padding: 11px; border-radius: 8px; border: none;
+                     background: #e94560; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; }
     #game-area { display: none; width: 100%; max-width: 480px; }
-    .hud { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-    .stage-badge { background: #0f3460; border: 1px solid #e94560; border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; color: #f0c040; }
-    .rol-chip { display: flex; align-items: center; gap: 6px; background: #0f3460; border-radius: 20px; padding: 3px 12px; font-size: 0.8rem; font-weight: 600; }
+    .hud { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+    .stage-badge { background: #0f3460; border: 1px solid #e94560; border-radius: 20px;
+                   padding: 3px 12px; font-size: 0.75rem; color: #f0c040; }
+    .rol-chip { display: flex; align-items: center; gap: 6px; background: #0f3460;
+                border-radius: 20px; padding: 3px 12px; font-size: 0.8rem; font-weight: 600; }
     .cdot { width: 14px; height: 14px; border-radius: 50%; }
-    .metrics-row { display: flex; gap: 8px; margin-bottom: 14px; }
+    .metrics-row { display: flex; gap: 8px; margin-bottom: 12px; }
     .metric { flex: 1; background: #0f3460; border-radius: 8px; padding: 8px; text-align: center; }
     .metric .val { font-size: 1.3rem; font-weight: 700; color: #f0c040; }
     .metric .lbl { font-size: 0.65rem; color: #aaa; }
-    .lote-info { background: #0a1628; border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; color: #aaa; margin-bottom: 14px; }
+    .lote-info { background: #0a1628; border-radius: 8px; padding: 8px 12px;
+                 font-size: 0.78rem; color: #aaa; margin-bottom: 10px; }
     .lote-info b { color: #f0c040; }
     #status-msg { font-size: 0.85rem; color: #f0c040; text-align: center; min-height: 18px; margin: 6px 0; }
-    #waiting-msg { text-align: center; color: #aaa; padding: 30px 0; font-size: 0.9rem; }
-
-    /* PROGRESS BAR lote */
-    .lote-progress { display: flex; gap: 4px; margin-bottom: 14px; }
-    .lp-dot { flex: 1; height: 6px; border-radius: 3px; background: #0f3460; transition: background 0.3s; }
+    #waiting-msg { text-align: center; color: #aaa; padding: 30px 10px; font-size: 0.9rem; line-height: 1.6; }
+    /* Lote progress */
+    .lote-progress { display: flex; gap: 4px; margin-bottom: 12px; }
+    .lp-dot { flex: 1; height: 6px; border-radius: 3px; background: #0f3460; }
     .lp-dot.done { background: #28a745; }
-    .lp-dot.active { background: #f0c040; }
-
-    /* TARJETA PAPEL */
-    .paper-card {
-      background: #fffef0;
-      border-radius: 8px;
-      box-shadow: 2px 3px 12px rgba(0,0,0,0.5), inset 0 0 0 1px #ddd;
-      padding: 14px 14px 10px;
-      margin-bottom: 14px;
-      position: relative;
-      color: #222;
-      user-select: none;
-    }
-    .paper-card .card-header {
-      display: flex; justify-content: space-between; align-items: center;
-      border-bottom: 1px solid #ccc; padding-bottom: 6px; margin-bottom: 10px;
-    }
-    .paper-card .card-num { font-size: 0.75rem; font-weight: 700; color: #444; }
-    .paper-card .card-logo { font-size: 0.65rem; color: #888; font-style: italic; }
-    .paper-card .card-estado {
-      font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px;
-      background: #eee; color: #666;
-    }
-    .paper-card .card-estado.aprobada { background: #d4edda; color: #155724; }
-    .paper-card .card-estado.revision { background: #fff3cd; color: #856404; }
-    .paper-card .card-estado.rechazada { background: #f8d7da; color: #721c24; }
-
-    /* FILAS DE POSICIONES */
-    .etiqueta-fila { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
-    .etiqueta-fila .fila-label { font-size: 0.65rem; color: #999; width: 14px; text-align: right; flex-shrink: 0; }
-    .drop-zone {
-      width: 52px; height: 28px; border-radius: 5px; border: 2px dashed #ccc;
-      background: #f5f5f0; display: flex; align-items: center; justify-content: center;
-      font-size: 0.6rem; color: #bbb; position: relative; transition: border 0.2s, background 0.2s;
-      flex-shrink: 0;
-    }
+    .lp-dot.pending { background: #f0c040; }
+    /* Paper card */
+    .paper-card { background: #fffef0; border-radius: 8px;
+                  box-shadow: 2px 3px 12px rgba(0,0,0,0.5); padding: 12px 12px 8px;
+                  margin-bottom: 12px; color: #222; user-select: none; }
+    .card-header { display: flex; justify-content: space-between; align-items: center;
+                   border-bottom: 1px solid #ccc; padding-bottom: 6px; margin-bottom: 8px; }
+    .card-num { font-size: 0.75rem; font-weight: 700; color: #444; }
+    .card-logo { font-size: 0.62rem; color: #999; font-style: italic; }
+    .card-estado { font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: #eee; color: #666; }
+    .card-estado.aprobada { background: #d4edda; color: #155724; }
+    .card-estado.revision { background: #fff3cd; color: #856404; }
+    .card-estado.rechazada { background: #f8d7da; color: #721c24; }
+    .card-estado.bloqueada { background: #e2e3e5; color: #383d41; }
+    /* Grid de etiquetas */
+    .etiqueta-fila { display: flex; gap: 6px; margin-bottom: 6px; }
+    .drop-zone { width: 52px; height: 28px; border-radius: 5px; border: 2px dashed #ccc;
+                 background: #f5f5f0; display: flex; align-items: center; justify-content: center;
+                 font-size: 0.58rem; color: #bbb; position: relative;
+                 transition: border 0.2s, background 0.2s; flex-shrink: 0; }
+    .drop-zone.mia { cursor: pointer; }
     .drop-zone.over { border-color: #e94560; background: #fff0f3; }
     .drop-zone.filled { border-style: solid; border-color: transparent; background: transparent; }
-    .drop-zone .etiqueta-pegada {
-      width: 100%; height: 100%; border-radius: 4px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.55rem; font-weight: 700; color: #fff; letter-spacing: 0.5px;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
-      position: relative;
-    }
-    .score-badge {
-      position: absolute; top: -7px; right: -7px;
-      background: #222; color: #fff; border-radius: 8px;
-      font-size: 0.5rem; padding: 1px 4px; font-weight: 700;
-    }
+    .drop-zone.bloqueada-zone { background: #eee; border-color: #ccc; cursor: not-allowed; }
+    .etiqueta-pegada { width: 100%; height: 100%; border-radius: 4px; display: flex;
+                       align-items: center; justify-content: center; font-size: 0.55rem;
+                       font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.4); position: relative; }
+    .score-badge { position: absolute; top: -7px; right: -7px; border-radius: 8px;
+                   font-size: 0.48rem; padding: 1px 3px; font-weight: 700; color: #fff; }
     .score-badge.perfect { background: #28a745; }
     .score-badge.ok { background: #d29922; }
     .score-badge.bad { background: #e94560; }
-
-    /* ETIQUETA DRAGGABLE */
-    .drag-area { margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px; }
-    .drag-area .da-label { font-size: 0.7rem; color: #888; margin-bottom: 6px; text-align: center; }
-    .draggable-etiqueta {
-      width: 64px; height: 34px; border-radius: 6px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.65rem; font-weight: 700; color: #fff;
-      cursor: grab; margin: 0 auto;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
-      touch-action: none;
-      transition: transform 0.1s, box-shadow 0.1s;
-    }
-    .draggable-etiqueta:active { cursor: grabbing; transform: scale(1.08); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
-    .draggable-etiqueta.agotada { opacity: 0.4; cursor: not-allowed; }
-
-    /* CALIDAD */
-    .calidad-panel { background: #fffef0; border-radius: 8px; padding: 12px; margin-bottom: 10px; color: #222; border: 2px solid #f0c040; }
+    /* Etiqueta draggable */
+    .drag-area { margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 8px; }
+    .da-label { font-size: 0.68rem; color: #888; margin-bottom: 5px; text-align: center; }
+    .draggable-etiqueta { width: 64px; height: 34px; border-radius: 6px; display: flex;
+                          align-items: center; justify-content: center; font-size: 0.65rem;
+                          font-weight: 700; color: #fff; cursor: grab; margin: 0 auto;
+                          box-shadow: 0 2px 8px rgba(0,0,0,0.3); touch-action: none;
+                          text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+    /* Boton entregar */
+    .btn-entregar { width: 100%; padding: 13px; border-radius: 10px; border: none;
+                    background: linear-gradient(135deg,#1a8a3a,#0d6e2e); color: #fff;
+                    font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 6px;
+                    box-shadow: 0 3px 12px rgba(26,138,58,0.4); letter-spacing: 0.5px;
+                    transition: transform 0.1s, box-shadow 0.1s; }
+    .btn-entregar:active { transform: scale(0.97); }
+    .btn-entregar:disabled { background: #555; box-shadow: none; cursor: not-allowed; }
+    /* Calidad */
+    .calidad-panel { background: #fffef0; border-radius: 8px; padding: 12px;
+                     margin-bottom: 10px; color: #222; border: 2px solid #f0c040; }
     .calidad-panel h3 { font-size: 0.85rem; color: #333; margin-bottom: 8px; }
-    .calidad-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #eee; font-size: 0.8rem; }
+    .calidad-item { display: flex; justify-content: space-between; align-items: center;
+                    padding: 7px 0; border-bottom: 1px solid #eee; font-size: 0.8rem; flex-wrap: wrap; gap: 4px; }
     .calidad-item:last-child { border-bottom: none; }
     .calidad-btns { display: flex; gap: 6px; }
-    .btn-aprobar { padding: 4px 10px; border-radius: 6px; border: none; background: #28a745; color: #fff; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
-    .btn-rechazar { padding: 4px 10px; border-radius: 6px; border: none; background: #e94560; color: #fff; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+    .btn-aprobar { padding: 5px 12px; border-radius: 6px; border: none; background: #28a745; color: #fff; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+    .btn-rechazar { padding: 5px 12px; border-radius: 6px; border: none; background: #e94560; color: #fff; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
     .score-pill { font-size: 0.7rem; padding: 2px 7px; border-radius: 10px; font-weight: 700; }
-
-    /* GHOST drag */
-    #drag-ghost {
-      position: fixed; pointer-events: none; z-index: 9999;
-      width: 58px; height: 30px; border-radius: 5px;
-      display: none; align-items: center; justify-content: center;
-      font-size: 0.6rem; font-weight: 700; color: #fff;
-      opacity: 0.85; transform: translate(-50%, -50%);
-    }
+    /* Ghost */
+    #drag-ghost { position: fixed; pointer-events: none; z-index: 9999; width: 58px; height: 30px;
+                  border-radius: 5px; display: none; align-items: center; justify-content: center;
+                  font-size: 0.6rem; font-weight: 700; color: #fff; opacity: 0.88;
+                  transform: translate(-50%,-50%); }
   </style>
 </head>
 <body>
@@ -147,6 +123,7 @@
       <option value="naranja">🟠 Naranja (1 etiqueta/tarjeta)</option>
       <option value="rojo">🔴 Rojo (3 etiquetas/tarjeta)</option>
       <option value="verde">🟢 Verde (2 etiquetas/tarjeta)</option>
+      <option value="materialista">📦 Materialista</option>
       <option value="calidad">🔍 Calidad / Inspector</option>
     </select>
     <label>Tu nombre</label>
@@ -171,7 +148,6 @@
     <div id="tarjetas-container"><div id="waiting-msg">⏳ Esperando inicio de etapa...</div></div>
   </div>
 
-  <!-- Ghost para drag visual -->
   <div id="drag-ghost"></div>
 
   <script type="module">
@@ -188,13 +164,12 @@
       appId: "1:181432386406:web:6804ed3af0e343cdc2bea7"
     };
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    const db  = getDatabase(app);
 
-    // ── CONSTANTES ──────────────────────────────────────────────
-    const COLORES = { amarillo:'#f5c518', naranja:'#e07800', rojo:'#e94560', verde:'#1a8a3a', calidad:'#6f42c1' };
+    // ── CONSTANTES ────────────────────────────────────────────────
+    const COLORES = { amarillo:'#f5c518', naranja:'#e07800', rojo:'#e94560', verde:'#1a8a3a', materialista:'#17a2b8', calidad:'#6f42c1' };
 
-    // Layout de posiciones en la tarjeta: [color, col, row] — 4 columnas, 3 filas
-    // Fila 0: amarillo x2 | Fila 1: naranja x1, rojo x2 | Fila 2: rojo x1, verde x2
+    // Posiciones fijas en la tarjeta (2 filas × 4 columnas)
     const POSICIONES = [
       { id:'a1', color:'amarillo', col:0, row:0 },
       { id:'a2', color:'amarillo', col:1, row:0 },
@@ -205,29 +180,25 @@
       { id:'v1', color:'verde',    col:2, row:1 },
       { id:'v2', color:'verde',    col:3, row:1 },
     ];
-    // Cuántas etiquetas por color
-    const CANTIDAD = { amarillo:2, naranja:1, rojo:3, verde:2 };
+
+    // Orden de turnos: quién puede pegar después de quién
+    const ORDEN_TURNOS = ['amarillo','naranja','rojo','verde','calidad'];
 
     const LOTE_CONFIG = {
-      1: { lote:4, nombre:'Etapa 1 — Lote de 4', desc:'Pega tus etiquetas en <b>4 tarjetas</b> antes de pasarlas.' },
-      2: { lote:2, nombre:'Etapa 2 — Lote de 2', desc:'Pega tus etiquetas en <b>2 tarjetas</b> y pasa.' },
+      1: { lote:4, nombre:'Etapa 1 — Lote de 4', desc:'Pega tus etiquetas en <b>4 tarjetas</b> y presiona Entregar.' },
+      2: { lote:2, nombre:'Etapa 2 — Lote de 2', desc:'Pega tus etiquetas en <b>2 tarjetas</b> y presiona Entregar.' },
       3: { lote:1, nombre:'Etapa 3 — Flujo unitario', desc:'Pega tu etiqueta en <b>1 tarjeta</b> y pasa inmediatamente.' }
     };
 
-    // Umbral de precisión (px)
-    const UMBRAL_OK = 18;       // ≤18px → ≥85% → perfecto
-    const UMBRAL_MARGINAL = 35; // ≤35px → marginal
-    // > 35px → defecto automático
+    const UMBRAL_OK = 18;
+    const UMBRAL_MARGINAL = 35;
 
     let sesion, equipo, rol, nombre;
     let etapaActual = 1;
     let tarjetasListener = null;
     let tarjetasData = {};
-    // Para drag
-    let dragTarjetaId = null;
-    let dragPosId = null;
 
-    // ── LOGIN ────────────────────────────────────────────────────
+    // ── LOGIN ─────────────────────────────────────────────────────
     window.entrar = function() {
       sesion = document.getElementById('inp-sesion').value.trim().toUpperCase();
       equipo = document.getElementById('inp-equipo').value;
@@ -259,109 +230,128 @@
     function actualizarHUD() {
       const cfg = LOTE_CONFIG[etapaActual]||LOTE_CONFIG[1];
       document.getElementById('stage-info').textContent = cfg.nombre;
-      document.getElementById('lote-info').innerHTML = cfg.desc;
+      document.getElementById('lote-info').innerHTML    = cfg.desc;
     }
 
     function escucharTarjetas() {
       if (tarjetasListener) tarjetasListener();
-      const r = ref(db,`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas`);
-      tarjetasListener = onValue(r, snap => {
-        tarjetasData = snap.val()||{};
-        render();
-      });
+      tarjetasListener = onValue(
+        ref(db,`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas`),
+        snap => { tarjetasData = snap.val()||{}; render(); }
+      );
+    }
+
+    // ── HELPERS DE TURNO ─────────────────────────────────────────
+    // Devuelve el color que tiene turno activo en una tarjeta
+    function turnoActual(t) {
+      for (const color of ORDEN_TURNOS) {
+        if (color === 'calidad') {
+          // calidad actúa si todas las posiciones están llenas y no está aprobada/rechazada
+          if (POSICIONES.every(p => t[p.id] !== undefined) && !t.aprobada && !t.rechazada) return 'calidad';
+          return null;
+        }
+        const misPosiciones = POSICIONES.filter(p => p.color === color);
+        const todasPegadas = misPosiciones.every(p => t[p.id] !== undefined);
+        if (!todasPegadas) return color; // este color todavía no terminó
+        // Si terminó pero no entregó → bloqueado (espera al que sigue)
+        if (!t[`entregado_${color}`]) return color; // necesita presionar Entregar
+      }
+      return null;
     }
 
     // ── RENDER PRINCIPAL ─────────────────────────────────────────
     function render() {
       const container = document.getElementById('tarjetas-container');
       const ids = Object.keys(tarjetasData);
+
       if (!ids.length) {
         container.innerHTML = '<div id="waiting-msg">⏳ Esperando que el instructor inicie la etapa...</div>';
         document.getElementById('lote-progress').innerHTML = '';
         return;
       }
 
+      if (rol === 'calidad') { renderCalidad(container, ids); return; }
+      if (rol === 'materialista') { renderMaterialista(container, ids); return; }
+
       const lote = LOTE_CONFIG[etapaActual]?.lote || 4;
 
-      if (rol === 'calidad') {
-        renderCalidad(container, ids);
-        return;
-      }
+      // Tarjetas donde es MI turno (el anterior ya entregó y yo no terminé)
+      const misTarjetas = ids.filter(id => turnoActual(tarjetasData[id]) === rol);
+      const loteActual  = misTarjetas.slice(0, lote);
 
-      // Para operarios: mostrar lote actual (primeras N tarjetas sin mis etiquetas completadas)
-      const misPendientes = ids.filter(id => {
+      // ¿Completé mis etiquetas en todas las del lote?
+      const loteCompleto = loteActual.length > 0 && loteActual.every(id => {
         const t = tarjetasData[id];
-        if (t.aprobada || t.rechazada) return false;
-        // Contar cuántas de mis posiciones ya están pegadas en esta tarjeta
-        const misPosiciones = POSICIONES.filter(p => p.color === rol);
-        const pegadas = misPosiciones.filter(p => t[p.id] !== undefined).length;
-        return pegadas < misPosiciones.length;
+        return POSICIONES.filter(p=>p.color===rol).every(p => t[p.id] !== undefined);
       });
+      const yaEntregue = loteActual.length > 0 && loteActual.every(id => tarjetasData[id][`entregado_${rol}`]);
 
-      const loteTarjetas = misPendientes.slice(0, lote);
+      // Progress bar
+      const pegadasCount = loteActual.filter(id => {
+        const t = tarjetasData[id];
+        return POSICIONES.filter(p=>p.color===rol).every(p => t[p.id] !== undefined);
+      }).length;
+      document.getElementById('lote-progress').innerHTML =
+        Array.from({length:lote},(_, i)=>
+          `<div class="lp-dot ${i < pegadasCount ? 'done' : i===pegadasCount?'pending':''}"></div>`
+        ).join('');
 
-      // Progress bar del lote
-      const progHtml = Array.from({length: lote}, (_, i) =>
-        `<div class="lp-dot ${i < loteTarjetas.length ? (tarjetasData[loteTarjetas[i]]?.[POSICIONES.find(p=>p.color===rol)?.id] !== undefined ? 'done' : 'active') : ''}"></div>`
-      ).join('');
-      document.getElementById('lote-progress').innerHTML = progHtml;
-
-      if (!loteTarjetas.length) {
-        container.innerHTML = '<div id="waiting-msg">✅ Lote completado, espera al materialista...</div>';
+      if (!loteActual.length) {
+        const espera = ORDEN_TURNOS[ORDEN_TURNOS.indexOf(rol)-1];
+        container.innerHTML = `<div id="waiting-msg">⏳ Esperando que <b>${espera||'el anterior'}</b> entregue el lote...<br><br><span style="font-size:0.75rem;color:#666">Cuando lo entregue, tus tarjetas aparecerán aquí.</span></div>`;
         return;
       }
 
-      container.innerHTML = loteTarjetas.map(id => renderTarjeta(id, tarjetasData[id])).join('');
+      let html = loteActual.map(id => renderTarjeta(id, tarjetasData[id])).join('');
+
+      // Botón Entregar
+      if (loteCompleto && !yaEntregue) {
+        html += `<button class="btn-entregar" onclick="entregarLote()">📦 ENTREGAR LOTE (${loteActual.length} tarjetas)</button>`;
+      } else if (yaEntregue) {
+        html += `<div id="waiting-msg" style="background:#0a2010;border-radius:8px;padding:14px">
+          ✅ Lote entregado — esperando al siguiente operario...</div>`;
+      }
+
+      container.innerHTML = html;
       setupDropZones();
     }
 
     function renderTarjeta(id, t) {
       const misPosiciones = POSICIONES.filter(p => p.color === rol);
-      const pegadasMias = misPosiciones.filter(p => t[p.id] !== undefined).length;
-      const todasPegadas = POSICIONES.every(p => t[p.id] !== undefined);
+      const todasMias = misPosiciones.every(p => t[p.id] !== undefined);
+      const todasLlenas = POSICIONES.every(p => t[p.id] !== undefined);
       const estadoLabel = t.aprobada ? 'aprobada' : t.rechazada ? 'rechazada' :
-                          todasPegadas ? 'revision' : '';
+                          todasLlenas ? 'revision' : '';
       const estadoTxt   = t.aprobada ? '✅ Aprobada' : t.rechazada ? '❌ Defecto' :
-                          todasPegadas ? '🔍 En revisión' : '';
+                          todasLlenas ? '🔍 En revisión' : '';
 
-      // Agrupar posiciones por fila
-      const filas = [0,1].map(row => POSICIONES.filter(p => p.row === row));
-
-      let filasHtml = filas.map(fila => {
-        const zonas = fila.map(pos => {
+      const filas = [0,1].map(row => {
+        const zonas = POSICIONES.filter(p=>p.row===row).map(pos => {
           const pegada = t[pos.id];
           if (pegada !== undefined) {
-            const scoreNum = pegada.score || 0;
-            const scoreClass = scoreNum >= 85 ? 'perfect' : scoreNum >= 60 ? 'ok' : 'bad';
-            return `<div class="drop-zone filled" data-pos="${pos.id}" data-tid="${id}">
+            const scoreNum  = pegada.score || 0;
+            const scoreClass = scoreNum>=85?'perfect':scoreNum>=60?'ok':'bad';
+            return `<div class="drop-zone filled">
               <div class="etiqueta-pegada" style="background:${COLORES[pos.color]}">
-                ${pegada.nombre ? pegada.nombre.substring(0,3).toUpperCase() : pos.color.substring(0,2).toUpperCase()}
+                ${(pegada.nombre||pos.color).substring(0,3).toUpperCase()}
                 <span class="score-badge ${scoreClass}">${scoreNum}%</span>
-              </div>
-            </div>`;
+              </div></div>`;
           }
-          // Zona vacía — solo mi color puede hacer drop
           const esMio = pos.color === rol;
           return `<div class="drop-zone${esMio?' mia':''}" data-pos="${pos.id}" data-tid="${id}" data-color="${pos.color}"
-            style="${esMio ? 'border-color:#'+COLORES[rol].replace('#','')+';' : ''}">
-            ${esMio ? '<span style="font-size:0.55rem;color:'+COLORES[rol]+'">drop</span>' : ''}
-          </div>`;
+            style="${esMio?'border-color:'+COLORES[rol]+';':''}"
+            >${esMio?'<span style="color:'+COLORES[rol]+';font-size:0.55rem">drop</span>':''}</div>`;
         }).join('');
         return `<div class="etiqueta-fila">${zonas}</div>`;
       }).join('');
 
-      // Etiqueta draggable (solo si me quedan posiciones)
       const meFalta = misPosiciones.some(p => t[p.id] === undefined);
-      const dragHtml = meFalta && !t.aprobada && !t.rechazada ? `
+      const dragHtml = meFalta && !t[`entregado_${rol}`] ? `
         <div class="drag-area">
           <div class="da-label">Arrastra tu etiqueta ↓</div>
-          <div class="draggable-etiqueta" id="drag-${id}"
-            style="background:${COLORES[rol]}"
-            draggable="true"
-            data-tid="${id}"
-            ontouchstart="touchStart(event)"
-            ontouchmove="touchMove(event)"
-            ontouchend="touchEnd(event)">
+          <div class="draggable-etiqueta" style="background:${COLORES[rol]}"
+            draggable="true" data-tid="${id}"
+            ontouchstart="touchStart(event)" ontouchmove="touchMove(event)" ontouchend="touchEnd(event)">
             ${nombre.substring(0,4).toUpperCase()}
           </div>
         </div>` : '';
@@ -371,57 +361,88 @@
           <span class="card-num">TARJETA #${t.numero}</span>
           <span class="card-logo">UA Lean</span>
           ${estadoLabel ? `<span class="card-estado ${estadoLabel}">${estadoTxt}</span>` : ''}
-        </div>
-        ${filasHtml}
-        ${dragHtml}
-      </div>`;
+        </div>${filas}${dragHtml}</div>`;
     }
 
-    // ── CALIDAD VIEW ─────────────────────────────────────────────
-    function renderCalidad(container, ids) {
-      const enRevision = ids.filter(id => {
+    // ── ENTREGAR LOTE ─────────────────────────────────────────────
+    window.entregarLote = async function() {
+      const lote = LOTE_CONFIG[etapaActual]?.lote || 4;
+      const ids  = Object.keys(tarjetasData);
+      const misTarjetas = ids.filter(id => {
         const t = tarjetasData[id];
-        return POSICIONES.every(p => t[p.id] !== undefined) && !t.aprobada && !t.rechazada;
+        return POSICIONES.filter(p=>p.color===rol).every(p=>t[p.id]!==undefined) && !t[`entregado_${rol}`];
+      }).slice(0,lote);
+
+      if (!misTarjetas.length) return;
+      const updates = {};
+      misTarjetas.forEach(id => {
+        updates[`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${id}/entregado_${rol}`] = Date.now();
       });
+      // Actualizar WIP
+      const snap = await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/wip`));
+      updates[`sesiones/${sesion}/equipos/${equipo}/metricas/wip`] = (snap.val()||0) + misTarjetas.length;
+      await update(ref(db), updates);
+      setStatus(`📦 Lote de ${misTarjetas.length} tarjetas entregado`);
+    };
+
+    // ── CALIDAD ───────────────────────────────────────────────────
+    function renderCalidad(container, ids) {
+      const enRevision = ids.filter(id => turnoActual(tarjetasData[id]) === 'calidad');
       if (!enRevision.length) {
         container.innerHTML = '<div id="waiting-msg">🔍 Sin tarjetas en revisión aún...</div>';
         return;
       }
       const items = enRevision.map(id => {
         const t = tarjetasData[id];
-        const scores = POSICIONES.map(p => t[p.id]?.score || 0);
+        const scores = POSICIONES.map(p => t[p.id]?.score||0);
         const avg = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
-        const cls = avg>=85?'perfect':avg>=60?'ok':'bad';
+        const cls = avg>=85?'#28a745':avg>=60?'#d29922':'#e94560';
         return `<div class="calidad-item">
           <span>Tarjeta #${t.numero}</span>
-          <span class="score-pill" style="background:${cls==='perfect'?'#28a745':cls==='ok'?'#d29922':'#e94560'};color:#fff">Score ${avg}%</span>
+          <span class="score-pill" style="background:${cls};color:#fff">Score ${avg}%</span>
           <div class="calidad-btns">
             <button class="btn-aprobar" onclick="decidirCalidad('${id}',true,${avg})">✅ OK</button>
             <button class="btn-rechazar" onclick="decidirCalidad('${id}',false,${avg})">❌ NG</button>
           </div>
         </div>`;
       }).join('');
-      container.innerHTML = `<div class="calidad-panel"><h3>🔍 Tarjetas en revisión (${enRevision.length})</h3>${items}</div>`;
+      container.innerHTML = `<div class="calidad-panel"><h3>🔍 En revisión (${enRevision.length})</h3>${items}</div>`;
     }
 
     window.decidirCalidad = async function(tarjetaId, aprobada, score) {
       const path = `sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${tarjetaId}`;
-      const updates = {};
-      updates[`${path}/aprobada`]  = aprobada;
-      updates[`${path}/rechazada`] = !aprobada;
-      updates[`${path}/scorePromedio`] = score;
+      const updates = { [`${path}/aprobada`]:aprobada, [`${path}/rechazada`]:!aprobada, [`${path}/scorePromedio`]:score };
+      const key = aprobada ? 'entregadas' : 'defectos';
+      const snap = await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/${key}`));
+      updates[`sesiones/${sesion}/equipos/${equipo}/metricas/${key}`] = (snap.val()||0)+1;
+      // Reducir WIP al aprobar
       if (aprobada) {
-        const snap = await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/entregadas`));
-        updates[`sesiones/${sesion}/equipos/${equipo}/metricas/entregadas`] = (snap.val()||0)+1;
-      } else {
-        const snap = await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/defectos`));
-        updates[`sesiones/${sesion}/equipos/${equipo}/metricas/defectos`] = (snap.val()||0)+1;
+        const wSnap = await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/wip`));
+        updates[`sesiones/${sesion}/equipos/${equipo}/metricas/wip`] = Math.max(0,(wSnap.val()||0)-1);
       }
       await update(ref(db), updates);
-      setStatus(aprobada ? '✅ Tarjeta aprobada' : '❌ Tarjeta rechazada — defecto registrado');
+      setStatus(aprobada ? '✅ Tarjeta aprobada' : '❌ Defecto registrado');
     };
 
-    // ── DRAG & DROP (mouse) ──────────────────────────────────────
+    // ── MATERIALISTA ──────────────────────────────────────────────
+    function renderMaterialista(container, ids) {
+      // El materialista ve tarjetas listas para mover (entregadas por verde, pendientes de calidad)
+      // En etapa 1 solo él puede mover — en etapas 2 y 3 su rol es de apoyo
+      const pendientes = ids.filter(id => {
+        const t = tarjetasData[id];
+        return t.entregado_verde && !t.aprobada && !t.rechazada;
+      });
+      const html = pendientes.length
+        ? pendientes.map(id => `<div class="paper-card"><div class="card-header">
+            <span class="card-num">TARJETA #${tarjetasData[id].numero}</span>
+            <span class="card-estado revision">🔍 Lista para Calidad</span>
+          </div></div>`).join('')
+        : '<div id="waiting-msg">📦 Sin lotes listos para mover aún...</div>';
+      container.innerHTML = html;
+    }
+
+    // ── DRAG & DROP MOUSE ─────────────────────────────────────────
+    let dragTarjetaId = null;
     function setupDropZones() {
       document.querySelectorAll('.draggable-etiqueta').forEach(el => {
         el.addEventListener('dragstart', e => {
@@ -430,25 +451,19 @@
         });
       });
       document.querySelectorAll('.drop-zone.mia').forEach(zone => {
-        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
+        zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('over'); });
         zone.addEventListener('dragleave', () => zone.classList.remove('over'));
         zone.addEventListener('drop', e => {
-          e.preventDefault();
-          zone.classList.remove('over');
-          const posId = zone.dataset.pos;
-          const tid   = zone.dataset.tid;
-          pegarEtiqueta(tid, posId, e.clientX, e.clientY, zone);
+          e.preventDefault(); zone.classList.remove('over');
+          pegarEtiqueta(zone.dataset.tid, zone.dataset.pos, e.clientX, e.clientY, zone);
         });
       });
     }
 
-    // ── DRAG & DROP (touch) ──────────────────────────────────────
-    let touchEl = null;
+    // ── DRAG & DROP TOUCH ─────────────────────────────────────────
     const ghost = document.getElementById('drag-ghost');
-
     window.touchStart = function(e) {
-      touchEl = e.currentTarget;
-      dragTarjetaId = touchEl.dataset.tid;
+      dragTarjetaId = e.currentTarget.dataset.tid;
       ghost.style.background = COLORES[rol];
       ghost.textContent = nombre.substring(0,4).toUpperCase();
       ghost.style.display = 'flex';
@@ -456,59 +471,36 @@
     window.touchMove = function(e) {
       e.preventDefault();
       const t = e.touches[0];
-      ghost.style.left = t.clientX + 'px';
-      ghost.style.top  = t.clientY + 'px';
-      // Highlight zona debajo
-      document.querySelectorAll('.drop-zone.over').forEach(z => z.classList.remove('over'));
-      const el = document.elementFromPoint(t.clientX, t.clientY);
-      const zone = el?.closest('.drop-zone.mia');
-      if (zone) zone.classList.add('over');
+      ghost.style.left = t.clientX+'px'; ghost.style.top = t.clientY+'px';
+      document.querySelectorAll('.drop-zone.over').forEach(z=>z.classList.remove('over'));
+      document.elementFromPoint(t.clientX,t.clientY)?.closest('.drop-zone.mia')?.classList.add('over');
     };
     window.touchEnd = function(e) {
       ghost.style.display = 'none';
       const t = e.changedTouches[0];
-      document.querySelectorAll('.drop-zone.over').forEach(z => z.classList.remove('over'));
-      const el = document.elementFromPoint(t.clientX, t.clientY);
-      const zone = el?.closest('.drop-zone.mia');
-      if (zone) {
-        pegarEtiqueta(zone.dataset.tid, zone.dataset.pos, t.clientX, t.clientY, zone);
-      }
-      touchEl = null;
+      document.querySelectorAll('.drop-zone.over').forEach(z=>z.classList.remove('over'));
+      const zone = document.elementFromPoint(t.clientX,t.clientY)?.closest('.drop-zone.mia');
+      if (zone) pegarEtiqueta(zone.dataset.tid, zone.dataset.pos, t.clientX, t.clientY, zone);
     };
 
-    // ── PEGAR ETIQUETA CON SCORE ─────────────────────────────────
+    // ── PEGAR CON SCORE ───────────────────────────────────────────
     async function pegarEtiqueta(tarjetaId, posId, dropX, dropY, zoneEl) {
-      // Calcular score de precisión
       const rect = zoneEl.getBoundingClientRect();
-      const cx = rect.left + rect.width/2;
-      const cy = rect.top  + rect.height/2;
-      const dist = Math.sqrt((dropX-cx)**2 + (dropY-cy)**2);
+      const dist = Math.sqrt((dropX-rect.left-rect.width/2)**2+(dropY-rect.top-rect.height/2)**2);
       let score;
-      if (dist <= UMBRAL_OK)       score = Math.round(100 - (dist/UMBRAL_OK)*15);        // 85–100%
-      else if (dist <= UMBRAL_MARGINAL) score = Math.round(85 - ((dist-UMBRAL_OK)/(UMBRAL_MARGINAL-UMBRAL_OK))*25); // 60–84%
-      else score = Math.max(0, Math.round(60 - ((dist-UMBRAL_MARGINAL)/20)*60));          // 0–59%
+      if (dist<=UMBRAL_OK)       score = Math.round(100-(dist/UMBRAL_OK)*15);
+      else if(dist<=UMBRAL_MARGINAL) score = Math.round(85-((dist-UMBRAL_OK)/(UMBRAL_MARGINAL-UMBRAL_OK))*25);
+      else score = Math.max(0,Math.round(60-((dist-UMBRAL_MARGINAL)/20)*60));
 
       const path = `sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${tarjetaId}`;
-      const updates = {};
-      updates[`${path}/${posId}`] = { score, nombre, rol, ts: Date.now() };
-
-      // ¿Todas las posiciones llenas?
-      const snap = await get(ref(db, path));
-      const t = snap.val()||{};
-      const todasLlenas = POSICIONES.every(p => p.id === posId ? true : t[p.id] !== undefined);
-      if (todasLlenas) {
-        updates[`${path}/pendienteCalidad`] = true;
-      }
-
-      await update(ref(db), updates);
-
-      const emoji = score>=85 ? '🎯' : score>=60 ? '⚠️' : '💥';
-      setStatus(`${emoji} Score de precisión: ${score}%`);
+      await update(ref(db), { [`${path}/${posId}`]: { score, nombre, rol, ts:Date.now() } });
+      const emoji = score>=85?'🎯':score>=60?'⚠️':'💥';
+      setStatus(`${emoji} Precisión: ${score}%`);
     }
 
     function setStatus(msg) {
       document.getElementById('status-msg').textContent = msg;
-      setTimeout(() => document.getElementById('status-msg').textContent = '', 3000);
+      setTimeout(()=>document.getElementById('status-msg').textContent='', 3000);
     }
   </script>
 </body>
