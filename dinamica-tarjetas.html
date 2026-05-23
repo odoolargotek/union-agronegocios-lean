@@ -35,13 +35,22 @@
     .lote-info b { color: #f0c040; }
     #status-msg { font-size: 0.85rem; color: #f0c040; text-align: center; min-height: 18px; margin: 6px 0; }
     #waiting-msg { text-align: center; color: #aaa; padding: 30px 10px; font-size: 0.9rem; line-height: 1.6; }
-    .btn-entregar { width: 100%; padding: 14px; border-radius: 10px; border: none;
+
+    /* ── Botón ENVIAR A SALIDA ── */
+    .btn-enviar-salida { width: 100%; padding: 14px; border-radius: 10px; border: none;
                     background: linear-gradient(135deg,#1a8a3a,#0d6e2e); color: #fff;
                     font-size: 1.05rem; font-weight: 700; cursor: pointer; margin-bottom: 12px;
                     box-shadow: 0 3px 14px rgba(26,138,58,0.45); letter-spacing: 0.5px;
                     transition: transform 0.1s; }
-    .btn-entregar:active { transform: scale(0.97); }
-    .btn-entregar:disabled { background: #444; box-shadow: none; cursor: not-allowed; }
+    .btn-enviar-salida:active { transform: scale(0.97); }
+    .btn-enviar-salida:disabled { background: #444; box-shadow: none; cursor: not-allowed; }
+
+    /* Banner bandeja de salida */
+    .salida-banner { background: #0d2518; border: 1px solid #1a8a3a55; border-radius: 8px;
+                     padding: 8px 12px; margin-bottom: 10px; font-size: 0.78rem; color: #1a8a3a;
+                     display: flex; align-items: center; gap: 8px; }
+    .salida-banner .sal-count { font-size: 1.1rem; font-weight: 900; color: #28a745; }
+
     .paper-card { background: #fffef0; border-radius: 8px;
                   box-shadow: 2px 3px 12px rgba(0,0,0,0.5); padding: 12px 12px 8px;
                   margin-bottom: 12px; color: #222; user-select: none; }
@@ -165,27 +174,20 @@
     ];
     const ORDEN_TURNOS = ['amarillo','naranja','rojo','verde'];
     const LOTE_CONFIG = {
-      1: { nombre:'Etapa 1 — Libre', desc:'Fabrica y <b>Entrega cuando quieras</b>. El materialista mueve las cajas.' },
-      2: { nombre:'Etapa 2 — Lote de 2', desc:'Trabaja de <b>2 en 2</b> y entrega el par.' },
-      3: { nombre:'Etapa 3 — Flujo unitario', desc:'Entrega <b>tarjeta por tarjeta</b> de inmediato.' }
+      1: { nombre:'Etapa 1 — Libre', desc:'Fabrica y presiona <b>Enviar a Salida</b> cuando quieras. El materialista mueve las cajas.' },
+      2: { nombre:'Etapa 2 — Lote de 2', desc:'Trabaja de <b>2 en 2</b> y envía el par a tu bandeja de salida.' },
+      3: { nombre:'Etapa 3 — Flujo unitario', desc:'Envía <b>tarjeta por tarjeta</b> a tu salida de inmediato.' }
     };
 
-    // ── UMBRALES DE PRECISIÓN ──────────────────────────────────────────
-    // Score PERFECTO (95–100%): distancia <= UMBRAL_OK px del centro
-    // Score MARGINAL (70–94%):  distancia entre UMBRAL_OK y UMBRAL_MARGINAL
-    // Score DEFECTO  (0–69%):   distancia > UMBRAL_MARGINAL
-    const UMBRAL_OK = 10;       // px — zona perfecta más pequeña (antes 18)
-    const UMBRAL_MARGINAL = 22; // px — zona marginal más pequeña (antes 35)
-    // Umbrales de calificación de score
-    const SCORE_PERFECTO  = 95; // antes 85
-    const SCORE_MARGINAL  = 70; // antes 60
-    // ──────────────────────────────────────────────────────────────────
-
+    const UMBRAL_OK       = 10;
+    const UMBRAL_MARGINAL = 22;
+    const SCORE_PERFECTO  = 95;
+    const SCORE_MARGINAL  = 70;
     const BANDEJA = 4;
 
     let sesion, equipo, rol, nombre, etapaActual=1, tarjetasListener=null, tarjetasData={};
 
-    function scoreVisible() { return etapaActual >= 3; }
+    function scoreVisible()     { return etapaActual >= 3; }
     function precisionVisible() { return etapaActual >= 3; }
 
     window.entrar = function() {
@@ -226,123 +228,177 @@
       );
     }
 
-    function anteriorEntrego(t, miRol) {
-      const idx=ORDEN_TURNOS.indexOf(miRol);
-      if (idx<=0) return true;
-      return !!t[`entregado_${ORDEN_TURNOS[idx-1]}`];
+    // El jugador puede trabajar si el anterior ya envió a su SALIDA
+    // Campo: salida_{color} = timestamp cuando el jugador presionó "Enviar a Salida"
+    // Amarillo no necesita esperar a nadie
+    function anteriorEnvioSalida(t, miRol) {
+      const idx = ORDEN_TURNOS.indexOf(miRol);
+      if (idx <= 0) return true;
+      const anterior = ORDEN_TURNOS[idx - 1];
+      // El materialista movió la caja a mi bandeja de entrada
+      return !!t[`entrada_${miRol}`];
     }
 
     function render() {
-      const container=document.getElementById('tarjetas-container');
-      const ids=Object.keys(tarjetasData);
-      if (!ids.length) { container.innerHTML='<div id="waiting-msg">⏳ Esperando que el instructor inicie la etapa...</div>'; return; }
-
-      const misPosiciones=POSICIONES.filter(p=>p.color===rol);
-      const todas=ids.sort((a,b)=>(tarjetasData[a].numero||0)-(tarjetasData[b].numero||0));
-      const sinEntregar=todas.filter(id=>!tarjetasData[id][`entregado_${rol}`]);
-      const conMiEtiqueta=sinEntregar.filter(id=>misPosiciones.some(p=>tarjetasData[id][p.id]!==undefined));
-      const enFabricacion=sinEntregar.filter(id=>misPosiciones.every(p=>tarjetasData[id][p.id]===undefined)).slice(0,BANDEJA);
-
-      if (!sinEntregar.length) { container.innerHTML='<div id="waiting-msg">✅ Todas las tarjetas entregadas esta etapa.</div>'; return; }
-
-      const btnLabel=conMiEtiqueta.length
-        ?`📦 ENTREGAR (${conMiEtiqueta.length} lista${conMiEtiqueta.length>1?'s':''})`
-        :`📦 ENTREGAR — pega al menos 1 etiqueta primero`;
-
-      let html=`<button class="btn-entregar" onclick="entregarLote()" ${conMiEtiqueta.length?'':'disabled'}>${btnLabel}</button>`;
-      if (conMiEtiqueta.length) {
-        html+=`<div style="font-size:0.7rem;color:#f0c040;margin-bottom:6px">📋 Listas para entregar</div>`;
-        html+=conMiEtiqueta.map(id=>renderTarjeta(id,tarjetasData[id],anteriorEntrego(tarjetasData[id],rol))).join('');
+      const container = document.getElementById('tarjetas-container');
+      const ids = Object.keys(tarjetasData);
+      if (!ids.length) {
+        container.innerHTML = '<div id="waiting-msg">⏳ Esperando que el instructor inicie la etapa...</div>';
+        return;
       }
+
+      const misPosiciones = POSICIONES.filter(p => p.color === rol);
+      const todas = ids.sort((a,b) => (tarjetasData[a].numero||0)-(tarjetasData[b].numero||0));
+
+      // Tarjetas en mi bandeja de ENTRADA (materialista me las trajo)
+      // Amarillo: todas las tarjetas están disponibles desde el inicio (no necesita materialista)
+      const enEntrada = todas.filter(id => {
+        const t = tarjetasData[id];
+        if (t[`salida_${rol}`]) return false; // ya la envié a salida
+        if (rol === 'amarillo') return !t[`salida_amarillo`];
+        return !!t[`entrada_${rol}`] && !t[`salida_${rol}`];
+      });
+
+      // Tarjetas en mi bandeja de SALIDA (ya procesé y envié, esperando materialista)
+      const enSalida = todas.filter(id => {
+        const t = tarjetasData[id];
+        return !!t[`salida_${rol}`] && !t[`entrada_${ORDEN_TURNOS[ORDEN_TURNOS.indexOf(rol)+1]}`];
+      }).filter(id => ORDEN_TURNOS.indexOf(rol) < ORDEN_TURNOS.length - 1); // verde no tiene siguiente
+
+      // Listas para enviar a salida (tienen mis etiquetas completas)
+      const listasParaSalida = enEntrada.filter(id =>
+        misPosiciones.every(p => tarjetasData[id][p.id] !== undefined)
+      );
+
+      // En fabricación (en entrada pero sin etiquetas completas)
+      const enFabricacion = enEntrada
+        .filter(id => misPosiciones.some(p => tarjetasData[id][p.id] === undefined))
+        .slice(0, BANDEJA);
+
+      if (!enEntrada.length && !enSalida.length) {
+        container.innerHTML = '<div id="waiting-msg">✅ Todas tus tarjetas procesadas esta etapa.</div>';
+        return;
+      }
+
+      let html = '';
+
+      // ── Botón Enviar a Salida ──
+      const puedoEnviar = listasParaSalida.length > 0;
+      html += `<button class="btn-enviar-salida" onclick="enviarASalida()" ${puedoEnviar?'':'disabled'}>
+        📤 ENVIAR A SALIDA${puedoEnviar ? ` (${listasParaSalida.length} tarjeta${listasParaSalida.length>1?'s':''})` : ' — termina de pegar etiquetas'}
+      </button>`;
+
+      // ── Banner bandeja de salida ──
+      if (enSalida.length > 0) {
+        html += `<div class="salida-banner">
+          📤 Bandeja de Salida — <span class="sal-count">${enSalida.length}</span>&nbsp;tarjeta${enSalida.length>1?'s':''} esperando al materialista
+        </div>`;
+      }
+
+      // ── Tarjetas listas para enviar ──
+      if (listasParaSalida.length) {
+        html += `<div style="font-size:0.7rem;color:#28a745;margin-bottom:6px">✅ Listas para enviar a salida</div>`;
+        html += listasParaSalida.map(id => renderTarjeta(id, tarjetasData[id], true)).join('');
+      }
+
+      // ── En fabricación ──
       if (enFabricacion.length) {
-        html+=`<div style="font-size:0.7rem;color:#aaa;margin-bottom:6px;margin-top:4px">🔧 En fabricación</div>`;
-        html+=enFabricacion.map(id=>renderTarjeta(id,tarjetasData[id],anteriorEntrego(tarjetasData[id],rol))).join('');
+        html += `<div style="font-size:0.7rem;color:#aaa;margin-bottom:6px;margin-top:4px">🔧 En fabricación</div>`;
+        html += enFabricacion.map(id => renderTarjeta(id, tarjetasData[id], true)).join('');
       }
-      container.innerHTML=html;
+
+      // ── Esperando materialista (si no hay nada en entrada) ──
+      if (!enEntrada.length && rol !== 'amarillo') {
+        html += `<div id="waiting-msg" style="padding:20px 0">⏳ Esperando que el materialista traiga tarjetas a tu bandeja de entrada...</div>`;
+      }
+
+      container.innerHTML = html;
       setupDropZones();
     }
 
     function renderTarjeta(id, t, puedo) {
-      const misPosiciones=POSICIONES.filter(p=>p.color===rol);
-      const yaEntregue=!!t[`entregado_${rol}`];
-      const todasLlenas=POSICIONES.every(p=>t[p.id]!==undefined);
-      const estadoLabel=yaEntregue?'entregada':t.aprobada?'aprobada':t.rechazada?'rechazada':todasLlenas?'revision':'';
-      const estadoTxt=yaEntregue?'📦 Entregada':t.aprobada?'✅ Aprobada':t.rechazada?'❌ Defecto':todasLlenas?'🔍 Revisión':'';
-      const mostrarScore=scoreVisible();
-      const filas=[0,1].map(row=>{
-        const zonas=POSICIONES.filter(p=>p.row===row).map(pos=>{
-          const pegada=t[pos.id];
-          if (pegada!==undefined) {
-            const s=pegada.score||0;
-            const sc=s>=SCORE_PERFECTO?'perfect':s>=SCORE_MARGINAL?'ok':'bad';
-            const scoreBadge=mostrarScore?`<span class="score-badge ${sc}">${s}%</span>`:'';
+      const misPosiciones = POSICIONES.filter(p => p.color === rol);
+      const yaEnvie = !!t[`salida_${rol}`];
+      const todasLlenas = POSICIONES.every(p => t[p.id] !== undefined);
+      const estadoLabel = yaEnvie?'entregada':t.aprobada?'aprobada':t.rechazada?'rechazada':todasLlenas?'revision':'';
+      const estadoTxt   = yaEnvie?'📤 En salida':t.aprobada?'✅ Aprobada':t.rechazada?'❌ Defecto':todasLlenas?'🔍 Revisión':'';
+      const mostrarScore = scoreVisible();
+      const filas = [0,1].map(row => {
+        const zonas = POSICIONES.filter(p => p.row === row).map(pos => {
+          const pegada = t[pos.id];
+          if (pegada !== undefined) {
+            const s = pegada.score||0;
+            const sc = s>=SCORE_PERFECTO?'perfect':s>=SCORE_MARGINAL?'ok':'bad';
+            const scoreBadge = mostrarScore?`<span class="score-badge ${sc}">${s}%</span>`:'';
             return `<div class="drop-zone filled"><div class="etiqueta-pegada" style="background:${COLORES[pos.color]}">${(pegada.nombre||pos.color).substring(0,3).toUpperCase()}${scoreBadge}</div></div>`;
           }
-          const esMio=pos.color===rol&&puedo&&!yaEntregue;
+          const esMio = pos.color===rol && puedo && !yaEnvie;
           return `<div class="drop-zone${esMio?' mia':''}" data-pos="${pos.id}" data-tid="${id}" style="${esMio?'border-color:'+COLORES[rol]+';':''}">${esMio?'<span style="color:'+COLORES[rol]+';font-size:0.55rem">drop</span>':''}</div>`;
         }).join('');
         return `<div class="etiqueta-fila">${zonas}</div>`;
       }).join('');
-      const meFalta=misPosiciones.some(p=>t[p.id]===undefined);
-      const bloqMsg=!puedo?`<div style="font-size:0.72rem;color:#888;text-align:center;padding:6px 0">⏳ Esperando que ${ORDEN_TURNOS[ORDEN_TURNOS.indexOf(rol)-1]} entregue...</div>`:'';
-      const dragHtml=meFalta&&puedo&&!yaEntregue?`<div class="drag-area"><div class="da-label">Arrastra tu etiqueta ↓</div><div class="draggable-etiqueta" style="background:${COLORES[rol]}" draggable="true" data-tid="${id}" ontouchstart="touchStart(event)" ontouchmove="touchMove(event)" ontouchend="touchEnd(event)">${nombre.substring(0,4).toUpperCase()}</div></div>`:bloqMsg;
-      return `<div class="paper-card${yaEntregue?' entregada-card':''}" id="pc-${id}"><div class="card-header"><span class="card-num">TARJETA #${t.numero}</span><span class="card-logo">UA Lean</span>${estadoLabel?`<span class="card-estado ${estadoLabel}">${estadoTxt}</span>`:''}</div>${filas}${dragHtml}</div>`;
+      const meFalta = misPosiciones.some(p => t[p.id] === undefined);
+      const dragHtml = meFalta && puedo && !yaEnvie
+        ? `<div class="drag-area"><div class="da-label">Arrastra tu etiqueta ↓</div><div class="draggable-etiqueta" style="background:${COLORES[rol]}" draggable="true" data-tid="${id}" ontouchstart="touchStart(event)" ontouchmove="touchMove(event)" ontouchend="touchEnd(event)">${nombre.substring(0,4).toUpperCase()}</div></div>`
+        : '';
+      return `<div class="paper-card${yaEnvie?' entregada-card':''}" id="pc-${id}"><div class="card-header"><span class="card-num">TARJETA #${t.numero}</span><span class="card-logo">UA Lean</span>${estadoLabel?`<span class="card-estado ${estadoLabel}">${estadoTxt}</span>`:''}</div>${filas}${dragHtml}</div>`;
     }
 
-    window.entregarLote=async function() {
-      const ids=Object.keys(tarjetasData);
-      const misPosiciones=POSICIONES.filter(p=>p.color===rol);
-      const aEntregar=ids.filter(id=>{
-        const t=tarjetasData[id];
-        return !t[`entregado_${rol}`]&&misPosiciones.some(p=>t[p.id]!==undefined);
-      }).sort((a,b)=>(tarjetasData[a].numero||0)-(tarjetasData[b].numero||0));
-      if (!aEntregar.length) return;
-      const ts=Date.now();
-      const updates={};
-      aEntregar.forEach(id=>{updates[`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${id}/entregado_${rol}`]=ts;});
-      const snap=await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/wip`));
-      updates[`sesiones/${sesion}/equipos/${equipo}/metricas/wip`]=(snap.val()||0)+aEntregar.length;
-      await update(ref(db),updates);
-      setStatus(`📦 ${aEntregar.length} tarjeta${aEntregar.length>1?'s':''} despachada${aEntregar.length>1?'s':''} ✅`);
+    // Jugador presiona "Enviar a Salida" — escribe salida_{rol} en Firebase
+    window.enviarASalida = async function() {
+      const ids = Object.keys(tarjetasData);
+      const misPosiciones = POSICIONES.filter(p => p.color === rol);
+      const aEnviar = ids.filter(id => {
+        const t = tarjetasData[id];
+        const enEntrada = rol === 'amarillo' ? !t[`salida_amarillo`] : !!t[`entrada_${rol}`] && !t[`salida_${rol}`];
+        return enEntrada && misPosiciones.every(p => t[p.id] !== undefined);
+      }).sort((a,b) => (tarjetasData[a].numero||0)-(tarjetasData[b].numero||0));
+      if (!aEnviar.length) return;
+      const ts = Date.now();
+      const updates = {};
+      aEnviar.forEach(id => {
+        updates[`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${id}/salida_${rol}`] = ts;
+        // Compatibilidad con instructor: también escribir entregado_{rol}
+        updates[`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${id}/entregado_${rol}`] = ts;
+      });
+      // Amarillo: actualizar WIP
+      const snap = await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/wip`));
+      updates[`sesiones/${sesion}/equipos/${equipo}/metricas/wip`] = (snap.val()||0) + aEnviar.length;
+      await update(ref(db), updates);
+      setStatus(`📤 ${aEnviar.length} tarjeta${aEnviar.length>1?'s':''} enviada${aEnviar.length>1?'s':''} a tu bandeja de salida ✅`);
     };
 
-    let dragTid=null;
+    let dragTid = null;
     function setupDropZones() {
-      document.querySelectorAll('.draggable-etiqueta').forEach(el=>{
-        el.addEventListener('dragstart',e=>{dragTid=el.dataset.tid;e.dataTransfer.effectAllowed='move';});
+      document.querySelectorAll('.draggable-etiqueta').forEach(el => {
+        el.addEventListener('dragstart', e => { dragTid=el.dataset.tid; e.dataTransfer.effectAllowed='move'; });
       });
-      document.querySelectorAll('.drop-zone.mia').forEach(zone=>{
-        zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('over');});
-        zone.addEventListener('dragleave',()=>zone.classList.remove('over'));
-        zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('over');pegarEtiqueta(zone.dataset.tid,zone.dataset.pos,e.clientX,e.clientY,zone);});
+      document.querySelectorAll('.drop-zone.mia').forEach(zone => {
+        zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('over'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+        zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('over'); pegarEtiqueta(zone.dataset.tid, zone.dataset.pos, e.clientX, e.clientY, zone); });
       });
     }
 
-    const ghost=document.getElementById('drag-ghost');
-    window.touchStart=function(e){dragTid=e.currentTarget.dataset.tid;ghost.style.background=COLORES[rol];ghost.textContent=nombre.substring(0,4).toUpperCase();ghost.style.display='flex';};
-    window.touchMove=function(e){e.preventDefault();const t=e.touches[0];ghost.style.left=t.clientX+'px';ghost.style.top=t.clientY+'px';document.querySelectorAll('.drop-zone.over').forEach(z=>z.classList.remove('over'));document.elementFromPoint(t.clientX,t.clientY)?.closest('.drop-zone.mia')?.classList.add('over');};
-    window.touchEnd=function(e){ghost.style.display='none';const t=e.changedTouches[0];document.querySelectorAll('.drop-zone.over').forEach(z=>z.classList.remove('over'));const zone=document.elementFromPoint(t.clientX,t.clientY)?.closest('.drop-zone.mia');if(zone)pegarEtiqueta(zone.dataset.tid,zone.dataset.pos,t.clientX,t.clientY,zone);};
+    const ghost = document.getElementById('drag-ghost');
+    window.touchStart = function(e) { dragTid=e.currentTarget.dataset.tid; ghost.style.background=COLORES[rol]; ghost.textContent=nombre.substring(0,4).toUpperCase(); ghost.style.display='flex'; };
+    window.touchMove  = function(e) { e.preventDefault(); const t=e.touches[0]; ghost.style.left=t.clientX+'px'; ghost.style.top=t.clientY+'px'; document.querySelectorAll('.drop-zone.over').forEach(z=>z.classList.remove('over')); document.elementFromPoint(t.clientX,t.clientY)?.closest('.drop-zone.mia')?.classList.add('over'); };
+    window.touchEnd   = function(e) { ghost.style.display='none'; const t=e.changedTouches[0]; document.querySelectorAll('.drop-zone.over').forEach(z=>z.classList.remove('over')); const zone=document.elementFromPoint(t.clientX,t.clientY)?.closest('.drop-zone.mia'); if(zone) pegarEtiqueta(zone.dataset.tid, zone.dataset.pos, t.clientX, t.clientY, zone); };
 
-    async function pegarEtiqueta(tarjetaId,posId,dropX,dropY,zoneEl) {
-      const rect=zoneEl.getBoundingClientRect();
-      const dist=Math.sqrt((dropX-rect.left-rect.width/2)**2+(dropY-rect.top-rect.height/2)**2);
+    async function pegarEtiqueta(tarjetaId, posId, dropX, dropY, zoneEl) {
+      const rect = zoneEl.getBoundingClientRect();
+      const dist = Math.sqrt((dropX-rect.left-rect.width/2)**2+(dropY-rect.top-rect.height/2)**2);
       let score;
-      // Zona perfecta (95–100%): dist <= UMBRAL_OK
       if (dist<=UMBRAL_OK) score=Math.round(100-(dist/UMBRAL_OK)*5);
-      // Zona marginal (70–94%): entre UMBRAL_OK y UMBRAL_MARGINAL
       else if (dist<=UMBRAL_MARGINAL) score=Math.round(95-((dist-UMBRAL_OK)/(UMBRAL_MARGINAL-UMBRAL_OK))*25);
-      // Zona defecto (0–69%): dist > UMBRAL_MARGINAL
       else score=Math.max(0,Math.round(70-((dist-UMBRAL_MARGINAL)/18)*70));
       const path=`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${tarjetaId}`;
       await update(ref(db),{[`${path}/${posId}`]:{score,nombre,rol,ts:Date.now()}});
-      if (precisionVisible()) {
-        setStatus(`${score>=SCORE_PERFECTO?'🎯':score>=SCORE_MARGINAL?'⚠️':'💥'} Precisión: ${score}%`);
-      } else {
-        setStatus('✅ Etiqueta pegada');
-      }
+      if (precisionVisible()) setStatus(`${score>=SCORE_PERFECTO?'🎯':score>=SCORE_MARGINAL?'⚠️':'💥'} Precisión: ${score}%`);
+      else setStatus('✅ Etiqueta pegada');
     }
 
-    function setStatus(msg){document.getElementById('status-msg').textContent=msg;setTimeout(()=>document.getElementById('status-msg').textContent='',3000);}
+    function setStatus(msg) { document.getElementById('status-msg').textContent=msg; setTimeout(()=>document.getElementById('status-msg').textContent='',3000); }
   </script>
 </body>
 </html>

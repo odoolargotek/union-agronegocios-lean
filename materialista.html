@@ -19,36 +19,52 @@
                     background: #0d1117; color: #fff; font-size: 0.95rem; margin-bottom: 14px; }
     button.primary { width: 100%; padding: 11px; border-radius: 8px; border: none;
                      background: #17a2b8; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; }
-    #game-area { display: none; width: 100%; max-width: 520px; }
+    #game-area { display: none; width: 100%; max-width: 560px; }
     .hud { display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
     .stage-badge { background:#161b22; border:1px solid #17a2b8; border-radius:20px;
                    padding:3px 12px; font-size:0.75rem; color:#17a2b8; }
     .equipo-chip { background:#161b22; border-radius:20px; padding:3px 12px; font-size:0.78rem; color:#aaa; }
     #status-msg { font-size:0.85rem; color:#17a2b8; text-align:center; min-height:18px; margin:4px 0 10px; }
-    .pipeline-wrap { width:100%; }
-    .zona { background:#161b22; border-radius:10px; padding:12px; margin-bottom:10px;
-            border:2px solid #30363d; min-height:90px; transition:border 0.2s, background 0.2s; }
-    .zona.drop-over { border-color:#17a2b8; background:#0d2530; }
-    .zona-header { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
-    .zona-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
-    .zona-title { font-size:0.82rem; font-weight:700; }
-    .zona-count { margin-left:auto; font-size:0.7rem; background:#0d1117; border-radius:10px;
-                  padding:2px 8px; color:#888; }
-    .cajas-wrap { display:flex; flex-wrap:wrap; gap:8px; min-height:52px; align-items:flex-start; }
-    .caja-vacia { color:#444; font-size:0.72rem; align-self:center; }
-    .caja { width:64px; height:64px; border-radius:8px; display:flex; flex-direction:column;
+
+    /* ── Bloques de color ── */
+    .color-block { background:#161b22; border-radius:12px; padding:14px; margin-bottom:14px;
+                   border:2px solid #30363d; }
+    .color-block-header { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+    .color-dot { width:14px; height:14px; border-radius:50%; flex-shrink:0; }
+    .color-title { font-size:0.9rem; font-weight:700; }
+    .bandejas-row { display:grid; grid-template-columns:1fr 40px 1fr; gap:0; align-items:start; }
+    .bandeja { border-radius:8px; padding:10px; min-height:72px; border:2px solid #30363d;
+               transition:border 0.2s, background 0.2s; }
+    .bandeja.entrada { background:#0d1117; }
+    .bandeja.salida  { background:#0a1628; }
+    .bandeja.drop-over { border-color:#17a2b8; background:#0d2530; }
+    .bandeja-label { font-size:0.62rem; font-weight:700; text-transform:uppercase;
+                     letter-spacing:0.5px; margin-bottom:6px; display:flex;
+                     align-items:center; justify-content:space-between; }
+    .bandeja-label .bl-icon { font-size:0.75rem; margin-right:3px; }
+    .bandeja-count { font-size:0.62rem; background:#21262d; border-radius:8px; padding:1px 6px; color:#888; }
+    .cajas-wrap { display:flex; flex-wrap:wrap; gap:6px; min-height:44px; align-items:flex-start; }
+    .caja-vacia { color:#333; font-size:0.68rem; align-self:center; }
+
+    /* Flecha central */
+    .arrow-col { display:flex; align-items:center; justify-content:center; padding-top:28px; }
+    .arrow-col span { font-size:1.4rem; color:#555; }
+
+    /* Caja draggable */
+    .caja { width:58px; height:58px; border-radius:8px; display:flex; flex-direction:column;
             align-items:center; justify-content:center; cursor:grab; touch-action:none;
-            box-shadow:0 3px 10px rgba(0,0,0,0.5); border:2px solid rgba(255,255,255,0.15);
-            transition:transform 0.1s, opacity 0.15s; user-select:none; position:relative; }
+            box-shadow:0 2px 8px rgba(0,0,0,0.5); border:2px solid rgba(255,255,255,0.12);
+            transition:transform 0.1s, opacity 0.15s; user-select:none; }
     .caja:active { transform:scale(0.95); }
-    .caja.moving { opacity:0.3; pointer-events:none; }
-    .caja-icon { font-size:1.4rem; line-height:1; }
-    .caja-num  { font-size:0.6rem; font-weight:700; color:#fff; margin-top:3px;
+    .caja-icon { font-size:1.2rem; line-height:1; }
+    .caja-num  { font-size:0.55rem; font-weight:700; color:#fff; margin-top:2px;
                  text-shadow:0 1px 3px rgba(0,0,0,0.6); }
-    .caja-ids  { font-size:0.5rem; color:rgba(255,255,255,0.6); text-align:center; }
-    #drag-ghost { position:fixed; pointer-events:none; z-index:9999; width:64px; height:64px;
+    .caja-ids  { font-size:0.45rem; color:rgba(255,255,255,0.55); text-align:center; }
+
+    /* Ghost touch */
+    #drag-ghost { position:fixed; pointer-events:none; z-index:9999; width:58px; height:58px;
                   border-radius:8px; display:none; align-items:center; justify-content:center;
-                  flex-direction:column; font-size:1.4rem; opacity:0.85;
+                  flex-direction:column; font-size:1.2rem; opacity:0.85;
                   transform:translate(-50%,-50%); box-shadow:0 4px 16px rgba(0,0,0,0.6); }
     .footer-brand { text-align:center; margin-top:24px; opacity:0.4; }
     .footer-brand img { height:14px; filter:brightness(0) invert(1); }
@@ -60,7 +76,7 @@
     <span>Largotek SRL</span>
   </div>
   <h1>📦 Materialista</h1>
-  <p class="subtitle">Mueve las cajas entre estaciones — Etapa 1</p>
+  <p class="subtitle">Transporta cajas entre bandejas de salida → entrada</p>
 
   <div class="login-card" id="login-area">
     <label>Código de Sesión</label>
@@ -83,7 +99,7 @@
       <div class="equipo-chip" id="equipo-chip">Equipo —</div>
     </div>
     <div id="status-msg"></div>
-    <div class="pipeline-wrap" id="pipeline"></div>
+    <div id="pipeline"></div>
   </div>
 
   <div class="footer-brand"><img src="https://www.largotek.com/web/image/website/2/logo/www.largotek.com?unique=d82f80f" alt="Largotek"></div>
@@ -91,7 +107,7 @@
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getDatabase, ref, set, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+    import { getDatabase, ref, set, onValue, update } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyBJN55Mv4YCb2LKvQxrMU_lptAN6BCCx1c",
@@ -105,28 +121,21 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    const ZONAS = [
-      { id:'cola_naranja',   label:'Cola Naranja',   color:'#e07800', dotColor:'#e07800',
-        desde:'entregado_amarillo', hasta:'entregado_materialista_naranja',
-        desc:'Entregado por Amarillo — mover a Naranja' },
-      { id:'cola_rojo',      label:'Cola Rojo',      color:'#e94560', dotColor:'#e94560',
-        desde:'entregado_naranja', hasta:'entregado_materialista_rojo',
-        desc:'Entregado por Naranja — mover a Rojo' },
-      { id:'cola_verde',     label:'Cola Verde',     color:'#1a8a3a', dotColor:'#1a8a3a',
-        desde:'entregado_rojo', hasta:'entregado_materialista_verde',
-        desc:'Entregado por Rojo — mover a Verde' },
-      { id:'cola_calidad',   label:'Cola Calidad',   color:'#6f42c1', dotColor:'#6f42c1',
-        desde:'entregado_verde', hasta:'entregado_materialista_calidad',
-        desc:'Terminado por Verde — mover a Calidad' },
+    // Flujo: Amarillo → Naranja → Rojo → Verde → Calidad
+    // El materialista mueve de salida_{color} a entrada_{siguiente}
+    const FLUJO = [
+      { color:'amarillo', label:'Amarillo', hex:'#f5c518',
+        campoSalida:'salida_amarillo', campoEntradaSig:'entrada_naranja', siguiente:'naranja' },
+      { color:'naranja',  label:'Naranja',  hex:'#e07800',
+        campoSalida:'salida_naranja',  campoEntradaSig:'entrada_rojo',    siguiente:'rojo' },
+      { color:'rojo',     label:'Rojo',     hex:'#e94560',
+        campoSalida:'salida_rojo',     campoEntradaSig:'entrada_verde',   siguiente:'verde' },
+      { color:'verde',    label:'Verde',    hex:'#1a8a3a',
+        campoSalida:'salida_verde',    campoEntradaSig:'entrada_calidad', siguiente:'calidad' },
     ];
 
-    let sesion, equipo, nombre;
-    let etapaActual = 1;
+    let sesion, equipo, nombre, etapaActual = 1;
     let tarjetasData = {};
-
-    // IDs en tránsito: evita que el re-render de Firebase los vuelva a mostrar en origen
-    // antes de que Firebase confirme el write
-    const enTransito = new Set();
 
     window.entrar = function() {
       sesion = document.getElementById('inp-sesion').value.trim().toUpperCase();
@@ -153,20 +162,17 @@
       );
     }
 
-    function agruparEnCajas(ids, campoDesde, campoHasta) {
-      const pendientes = ids.filter(id => {
-        if (enTransito.has(id)) return false;  // ya en tránsito, no mostrar en origen
-        const t = tarjetasData[id];
-        return t[campoDesde] && !t[campoHasta];
-      });
-      if (!pendientes.length) return [];
+    // Agrupa tarjetas que salieron juntas (mismo timestamp ±2s)
+    function agruparPorTs(ids, campo) {
+      const validos = ids.filter(id => tarjetasData[id][campo]);
+      if (!validos.length) return [];
       const grupos = [];
       const usados = new Set();
-      pendientes.sort((a,b) => tarjetasData[a][campoDesde] - tarjetasData[b][campoDesde]);
-      for (const id of pendientes) {
+      validos.sort((a,b) => tarjetasData[a][campo] - tarjetasData[b][campo]);
+      for (const id of validos) {
         if (usados.has(id)) continue;
-        const ts = tarjetasData[id][campoDesde];
-        const grupo = pendientes.filter(x => !usados.has(x) && Math.abs(tarjetasData[x][campoDesde] - ts) <= 2000);
+        const ts = tarjetasData[id][campo];
+        const grupo = validos.filter(x => !usados.has(x) && Math.abs(tarjetasData[x][campo]-ts) <= 2000);
         grupo.forEach(x => usados.add(x));
         grupos.push({ ts, ids: grupo });
       }
@@ -175,177 +181,183 @@
 
     function render() {
       const ids = Object.keys(tarjetasData);
-
-      // Limpiar enTransito cuando Firebase ya confirmó el write
-      enTransito.forEach(id => {
-        const t = tarjetasData[id];
-        if (!t) { enTransito.delete(id); return; }
-        // Si alguna zona ya tiene el campo 'hasta' escrito, ya no está en tránsito
-        const yaConfirmado = ZONAS.some(z => t[z.hasta]);
-        if (yaConfirmado) enTransito.delete(id);
-      });
-
       let html = '';
-      ZONAS.forEach(zona => {
-        const cajas = agruparEnCajas(ids, zona.desde, zona.hasta);
-        const total = cajas.reduce((s,c)=>s+c.ids.length,0);
-        const cajasHtml = cajas.length
-          ? cajas.map(c => `
-              <div class="caja" style="background:${zona.color}22;border-color:${zona.color}88;"
-                data-zona="${zona.id}" data-ts="${c.ts}" data-ids="${c.ids.join(',')}"
-                ontouchstart="touchStart(event)" ontouchmove="touchMove(event)" ontouchend="touchEnd(event)"
-                draggable="true">
-                <div class="caja-icon">📦</div>
-                <div class="caja-num" style="color:${zona.color}">${c.ids.length} tarjeta${c.ids.length>1?'s':''}</div>
-                <div class="caja-ids">#${c.ids.map(x=>tarjetasData[x].numero).sort((a,b)=>a-b).join(',')}</div>
-              </div>`).join('')
-          : '<span class="caja-vacia">Sin cajas</span>';
+
+      FLUJO.forEach(f => {
+        // Bandeja SALIDA: tarjetas que el jugador envió pero aún no fueron movidas por el materialista
+        const enSalida = agruparPorTs(
+          ids.filter(id => tarjetasData[id][f.campoSalida] && !tarjetasData[id][f.campoEntradaSig]),
+          f.campoSalida
+        );
+        // Bandeja ENTRADA del SIGUIENTE: tarjetas que el materialista ya movió
+        const enEntrada = agruparPorTs(
+          ids.filter(id => tarjetasData[id][f.campoEntradaSig]),
+          f.campoEntradaSig
+        );
+
+        const totalSalida  = enSalida.reduce((s,c)=>s+c.ids.length,0);
+        const totalEntrada = enEntrada.reduce((s,c)=>s+c.ids.length,0);
+        const siguienteLabel = f.siguiente.charAt(0).toUpperCase()+f.siguiente.slice(1);
+
+        const cajasHtmlSalida = enSalida.length
+          ? enSalida.map(c => cajaDom(c, f, 'salida')).join('')
+          : '<span class="caja-vacia">Vacía</span>';
+
+        const cajasHtmlEntrada = enEntrada.length
+          ? enEntrada.map(c => cajaDom(c, f, 'entrada')).join('')
+          : '<span class="caja-vacia">Vacía</span>';
 
         html += `
-          <div class="zona" id="zona-${zona.id}"
-            ondragover="dragOver(event,'${zona.id}')" ondragleave="dragLeave('${zona.id}')"
-            ondrop="drop(event,'${zona.id}')">
-            <div class="zona-header">
-              <div class="zona-dot" style="background:${zona.dotColor}"></div>
-              <span class="zona-title">${zona.label}</span>
-              <span class="zona-count">${total} tarjeta${total!==1?'s':''}</span>
+          <div class="color-block" id="block-${f.color}">
+            <div class="color-block-header">
+              <div class="color-dot" style="background:${f.hex}"></div>
+              <span class="color-title" style="color:${f.hex}">${f.label}</span>
+              <span style="font-size:0.68rem;color:#555;margin-left:auto">arrastra de Salida → Entrada ${siguienteLabel}</span>
             </div>
-            <div class="cajas-wrap" id="cajas-${zona.id}">${cajasHtml}</div>
-            <div style="font-size:0.62rem;color:#555;margin-top:6px">${zona.desc}</div>
+            <div class="bandejas-row">
+              <!-- SALIDA -->
+              <div class="bandeja salida" id="salida-${f.color}">
+                <div class="bandeja-label" style="color:${f.hex}">
+                  <span><span class="bl-icon">📤</span>Salida ${f.label}</span>
+                  <span class="bandeja-count">${totalSalida}</span>
+                </div>
+                <div class="cajas-wrap" id="cajas-salida-${f.color}">${cajasHtmlSalida}</div>
+              </div>
+              <!-- Flecha -->
+              <div class="arrow-col"><span>→</span></div>
+              <!-- ENTRADA SIGUIENTE -->
+              <div class="bandeja entrada" id="entrada-${f.siguiente}"
+                ondragover="dragOver(event,'entrada-${f.siguiente}')"
+                ondragleave="dragLeave('entrada-${f.siguiente}')"
+                ondrop="drop(event,'entrada-${f.siguiente}','${f.color}')">
+                <div class="bandeja-label" style="color:#aaa">
+                  <span><span class="bl-icon">📥</span>Entrada ${siguienteLabel}</span>
+                  <span class="bandeja-count">${totalEntrada}</span>
+                </div>
+                <div class="cajas-wrap" id="cajas-entrada-${f.siguiente}">${cajasHtmlEntrada}</div>
+              </div>
+            </div>
           </div>`;
       });
 
-      document.getElementById('pipeline').innerHTML = html;
+      document.getElementById('pipeline').innerHTML = html || '<p style="color:#555">Sin tarjetas aún.</p>';
       setupMouseDrag();
     }
 
-    // ── MOVER CAJA ────────────────────────────────────────────────
-    async function moverCaja(ids, zonaDestinoId, cajaEl) {
-      const zonaDestino = ZONAS.find(z => z.id === zonaDestinoId);
-      if (!zonaDestino) return;
+    function cajaDom(c, f, tipo) {
+      // Solo las cajas en SALIDA son arrastrables
+      const draggable = tipo === 'salida';
+      const nums = c.ids.map(x=>tarjetasData[x]?.numero).filter(Boolean).sort((a,b)=>a-b);
+      return `<div class="caja" style="background:${f.hex}22;border-color:${f.hex}55;"
+        ${draggable ? `data-color="${f.color}" data-ids="${c.ids.join(',')}" draggable="true"
+        ontouchstart="touchStart(event)" ontouchmove="touchMove(event)" ontouchend="touchEnd(event)"` : ''}
+        >
+        <div class="caja-icon">📦</div>
+        <div class="caja-num" style="color:${f.hex}">${c.ids.length} tarj.</div>
+        <div class="caja-ids">#${nums.join(',')}</div>
+      </div>`;
+    }
 
-      // 1. Marcar IDs en tránsito para que el próximo render no los muestre en origen
-      ids.forEach(id => enTransito.add(id));
-
-      // 2. OPTIMISTIC: mover la caja visualmente al destino de inmediato
-      if (cajaEl) {
-        cajaEl.classList.add('moving');
-        const destinoWrap = document.getElementById(`cajas-${zonaDestinoId}`);
-        if (destinoWrap) {
-          // Quitar el "Sin cajas" si existe
+    // ── MOVER CAJA ──
+    async function moverCaja(ids, colorOrigen, destinoEl) {
+      const f = FLUJO.find(x => x.color === colorOrigen);
+      if (!f) return;
+      // Optimistic: mover visualmente al instante
+      const origenWrap  = document.getElementById(`cajas-salida-${colorOrigen}`);
+      const destinoWrap = document.getElementById(`cajas-entrada-${f.siguiente}`);
+      if (origenWrap && destinoWrap && destinoEl) {
+        const cajaEl = destinoEl.closest('.caja');
+        if (cajaEl) {
+          const clone = cajaEl.cloneNode(true);
+          clone.removeAttribute('draggable');
+          clone.style.cursor = 'default';
+          // Quitar listeners
+          const fresh = clone.cloneNode(true);
           const vacia = destinoWrap.querySelector('.caja-vacia');
           if (vacia) vacia.remove();
-          // Clonar con el color del destino y agregarlo
-          const clone = cajaEl.cloneNode(true);
-          clone.style.background = `${zonaDestino.color}22`;
-          clone.style.borderColor = `${zonaDestino.color}88`;
-          clone.querySelector('.caja-num').style.color = zonaDestino.color;
-          clone.classList.remove('moving');
-          clone.dataset.zona = zonaDestinoId;
-          clone.setAttribute('draggable','true');
-          clone.ontouchstart = null; clone.ontouchmove = null; clone.ontouchend = null;
-          destinoWrap.appendChild(clone);
-          // Actualizar contador en header del destino
-          const destinoCount = document.querySelector(`#zona-${zonaDestinoId} .zona-count`);
-          if (destinoCount) {
-            const prev = parseInt(destinoCount.textContent)||0;
-            const nuevo = prev + ids.length;
-            destinoCount.textContent = `${nuevo} tarjeta${nuevo!==1?'s':''}`;
-          }
-          // Remover caja del origen
+          destinoWrap.appendChild(fresh);
           cajaEl.remove();
-          // Actualizar contador del origen
-          const origenId = cajaEl.dataset.zona;
-          const origenCount = document.querySelector(`#zona-${origenId} .zona-count`);
-          const origenWrap  = document.getElementById(`cajas-${origenId}`);
-          if (origenCount) {
-            const prev = parseInt(origenCount.textContent)||0;
-            const nuevo = Math.max(0, prev - ids.length);
-            origenCount.textContent = `${nuevo} tarjeta${nuevo!==1?'s':''}`;
-          }
-          if (origenWrap && origenWrap.children.length === 0) {
-            origenWrap.innerHTML = '<span class="caja-vacia">Sin cajas</span>';
-          }
-          // Re-adjuntar listeners touch/drag al clon
-          clone.addEventListener('dragstart', e => {
-            dragData = { zonaId: clone.dataset.zona, ids: clone.dataset.ids.split(','), el: clone };
-            e.dataTransfer.effectAllowed = 'move';
-          });
-          clone.addEventListener('touchstart', e => touchStart(e), { passive: false });
-          clone.addEventListener('touchmove',  e => touchMove(e),  { passive: false });
-          clone.addEventListener('touchend',   e => touchEnd(e));
+          if (!origenWrap.children.length) origenWrap.innerHTML = '<span class="caja-vacia">Vacía</span>';
+          // Actualizar contadores
+          const sc = document.querySelector(`#salida-${colorOrigen} .bandeja-count`);
+          const ec = document.querySelector(`#entrada-${f.siguiente} .bandeja-count`);
+          if (sc) { const v=Math.max(0,(parseInt(sc.textContent)||0)-ids.length); sc.textContent=v; }
+          if (ec) { const v=(parseInt(ec.textContent)||0)+ids.length; ec.textContent=v; }
         }
       }
-
-      // 3. Escribir en Firebase (asíncrono, el DOM ya mostró el resultado)
+      // Escribir en Firebase
       const ts = Date.now();
       const updates = {};
       ids.forEach(id => {
-        updates[`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${id}/${zonaDestino.hasta}`] = ts;
+        updates[`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${id}/${f.campoEntradaSig}`] = ts;
       });
       await update(ref(db), updates);
-      setStatus(`✅ ${ids.length} tarjeta${ids.length>1?'s':''} movida${ids.length>1?'s':''} a ${zonaDestino.label}`);
+      setStatus(`✅ ${ids.length} tarjeta${ids.length>1?'s':''} movida${ids.length>1?'s':''} → Entrada ${f.siguiente.charAt(0).toUpperCase()+f.siguiente.slice(1)}`);
     }
 
-    // ── DRAG MOUSE ────────────────────────────────────────────────
+    // ── DRAG MOUSE ──
     let dragData = null;
     function setupMouseDrag() {
-      document.querySelectorAll('.caja').forEach(el => {
+      document.querySelectorAll('.caja[draggable]').forEach(el => {
         el.addEventListener('dragstart', e => {
-          dragData = { zonaId: el.dataset.zona, ids: el.dataset.ids.split(','), el };
+          dragData = { color: el.dataset.color, ids: el.dataset.ids.split(','), el };
           e.dataTransfer.effectAllowed = 'move';
         });
       });
     }
-    window.dragOver = function(e, zonaId) {
+    window.dragOver  = (e, id) => { e.preventDefault(); document.getElementById(id)?.classList.add('drop-over'); };
+    window.dragLeave = id      => { document.getElementById(id)?.classList.remove('drop-over'); };
+    window.drop = function(e, zonaId, colorOrigen) {
       e.preventDefault();
-      document.getElementById('zona-'+zonaId)?.classList.add('drop-over');
-    };
-    window.dragLeave = function(zonaId) {
-      document.getElementById('zona-'+zonaId)?.classList.remove('drop-over');
-    };
-    window.drop = function(e, zonaId) {
-      e.preventDefault();
-      document.getElementById('zona-'+zonaId)?.classList.remove('drop-over');
-      if (!dragData) return;
-      moverCaja(dragData.ids, zonaId, dragData.el);
+      document.getElementById(zonaId)?.classList.remove('drop-over');
+      if (!dragData || dragData.color !== colorOrigen) {
+        setStatus('⚠️ Solo puedes mover de Salida a la Entrada del siguiente color.');
+        dragData = null; return;
+      }
+      moverCaja(dragData.ids, dragData.color, dragData.el);
       dragData = null;
     };
 
-    // ── DRAG TOUCH ────────────────────────────────────────────────
+    // ── DRAG TOUCH ──
     const ghost = document.getElementById('drag-ghost');
     let touchDragData = null;
     window.touchStart = function(e) {
       const el = e.currentTarget;
-      touchDragData = { zonaId: el.dataset.zona, ids: el.dataset.ids.split(','), el };
-      ghost.style.background = ZONAS.find(z=>z.id===el.dataset.zona)?.color||'#17a2b8';
-      ghost.innerHTML = '<div style="font-size:1.4rem">📦</div>';
+      touchDragData = { color: el.dataset.color, ids: el.dataset.ids.split(','), el };
+      const f = FLUJO.find(x => x.color === el.dataset.color);
+      ghost.style.background = f?.hex || '#17a2b8';
+      ghost.innerHTML = '<div style="font-size:1.2rem">📦</div>';
       ghost.style.display = 'flex';
     };
     window.touchMove = function(e) {
       e.preventDefault();
       const t = e.touches[0];
       ghost.style.left = t.clientX+'px'; ghost.style.top = t.clientY+'px';
-      document.querySelectorAll('.zona.drop-over').forEach(z=>z.classList.remove('drop-over'));
-      const el = document.elementFromPoint(t.clientX, t.clientY);
-      el?.closest('.zona')?.classList.add('drop-over');
+      document.querySelectorAll('.bandeja.drop-over').forEach(z=>z.classList.remove('drop-over'));
+      document.elementFromPoint(t.clientX,t.clientY)?.closest('.bandeja.entrada')?.classList.add('drop-over');
     };
     window.touchEnd = function(e) {
       ghost.style.display = 'none';
-      document.querySelectorAll('.zona.drop-over').forEach(z=>z.classList.remove('drop-over'));
+      document.querySelectorAll('.bandeja.drop-over').forEach(z=>z.classList.remove('drop-over'));
       if (!touchDragData) return;
       const t = e.changedTouches[0];
-      const zona = document.elementFromPoint(t.clientX, t.clientY)?.closest('.zona');
-      if (zona) {
-        const zonaId = zona.id.replace('zona-','');
-        moverCaja(touchDragData.ids, zonaId, touchDragData.el);
+      const bandeja = document.elementFromPoint(t.clientX,t.clientY)?.closest('.bandeja.entrada');
+      if (bandeja) {
+        const zonaId = bandeja.id; // entrada-{color}
+        const colorDestino = zonaId.replace('entrada-','');
+        const f = FLUJO.find(x => x.siguiente === colorDestino);
+        if (f && f.color === touchDragData.color) {
+          moverCaja(touchDragData.ids, touchDragData.color, touchDragData.el);
+        } else {
+          setStatus('⚠️ Solo puedes mover de Salida a la Entrada del siguiente color.');
+        }
       }
       touchDragData = null;
     };
 
     function setStatus(msg) {
       document.getElementById('status-msg').textContent = msg;
-      setTimeout(()=>document.getElementById('status-msg').textContent='', 3000);
+      setTimeout(()=>document.getElementById('status-msg').textContent='',3000);
     }
   </script>
 </body>
