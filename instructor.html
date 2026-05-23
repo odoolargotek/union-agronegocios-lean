@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instructor — Vista Master</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0d1117; color: #eee; padding: 20px; }
+    h1 { font-size: 1.3rem; color: #f0c040; margin-bottom: 4px; }
+    .subtitle { font-size: 0.8rem; color: #888; margin-bottom: 20px; }
+    .controls { background: #161b22; border-radius: 10px; padding: 16px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+    .ctrl-group { display: flex; flex-direction: column; gap: 4px; }
+    .ctrl-group label { font-size: 0.75rem; color: #aaa; }
+    input, select { padding: 8px 12px; border-radius: 6px; border: 1px solid #30363d; background: #0d1117; color: #eee; font-size: 0.9rem; }
+    button { padding: 8px 18px; border-radius: 6px; border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+    .btn-green { background: #238636; color: #fff; } .btn-green:hover { background: #2ea043; }
+    .btn-blue { background: #1f6feb; color: #fff; } .btn-blue:hover { background: #388bfd; }
+    .btn-red { background: #da3633; color: #fff; } .btn-red:hover { background: #f85149; }
+    .btn-orange { background: #d29922; color: #fff; } .btn-orange:hover { background: #e3b341; }
+    .stage-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    .equipos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .equipo-card { background: #161b22; border-radius: 10px; padding: 16px; border: 1px solid #30363d; }
+    .equipo-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .equipo-title { font-size: 1rem; font-weight: 700; color: #f0c040; }
+    .online-count { font-size: 0.75rem; background: #238636; color: #fff; border-radius: 10px; padding: 2px 8px; }
+    .metrics-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+    .metric { background: #0d1117; border-radius: 6px; padding: 8px; text-align: center; }
+    .metric .val { font-size: 1.3rem; font-weight: 700; color: #58a6ff; }
+    .metric .lbl { font-size: 0.65rem; color: #888; margin-top: 2px; }
+    .tarjetas-mini { display: flex; flex-wrap: wrap; gap: 4px; }
+    .tcard { width: 36px; height: 36px; border-radius: 4px; border: 1px solid #30363d; display: flex; flex-direction: column; gap: 2px; padding: 3px; }
+    .tcard-dot { flex: 1; border-radius: 2px; }
+    .tcard.completa { border-color: #28a745; }
+    .jugadores-list { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .jugador-badge { font-size: 0.7rem; background: #1f2937; border-radius: 10px; padding: 3px 8px; border-left: 3px solid #888; }
+    .global-metrics { background: #161b22; border-radius: 10px; padding: 16px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+    .gm { text-align: center; }
+    .gm .val { font-size: 1.8rem; font-weight: 700; color: #f0c040; }
+    .gm .lbl { font-size: 0.75rem; color: #888; }
+    .defecto-btn { font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; border: 1px solid #da3633; background: transparent; color: #da3633; cursor: pointer; margin-top: 6px; }
+    .defecto-btn:hover { background: #da3633; color: #fff; }
+  </style>
+</head>
+<body>
+  <h1>🎓 Vista Instructor — Fábrica de Tarjetas</h1>
+  <p class="subtitle">Unión Agronegocios Lean White Belt — Panel de control en tiempo real</p>
+
+  <div class="controls">
+    <div class="ctrl-group">
+      <label>Código de Sesión</label>
+      <input type="text" id="inp-sesion" placeholder="Ej: LSS2026" maxlength="12">
+    </div>
+    <div class="ctrl-group">
+      <label>Acción</label>
+      <button class="btn-green" onclick="conectar()">🔌 Conectar</button>
+    </div>
+    <div class="ctrl-group">
+      <label>Etapa activa</label>
+      <div class="stage-controls">
+        <button class="btn-blue" onclick="setEtapa(1)">Etapa 1</button>
+        <button class="btn-blue" onclick="setEtapa(2)">Etapa 2</button>
+        <button class="btn-blue" onclick="setEtapa(3)">Etapa 3</button>
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <label>Tarjetas por equipo</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="number" id="inp-ntarjetas" value="40" min="5" max="60" style="width:70px">
+        <button class="btn-orange" onclick="iniciarEtapa()">▶ Iniciar Etapa</button>
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <label>Reset</label>
+      <button class="btn-red" onclick="resetSesion()">🗑 Reset sesión</button>
+    </div>
+  </div>
+
+  <div class="global-metrics">
+    <div class="gm"><div class="val" id="g-etapa">—</div><div class="lbl">Etapa</div></div>
+    <div class="gm"><div class="val" id="g-entregadas">0</div><div class="lbl">Total entregadas</div></div>
+    <div class="gm"><div class="val" id="g-wip">0</div><div class="lbl">WIP total</div></div>
+    <div class="gm"><div class="val" id="g-defectos">0</div><div class="lbl">Defectos totales</div></div>
+    <div class="gm"><div class="val" id="g-jugadores">0</div><div class="lbl">Jugadores online</div></div>
+  </div>
+
+  <div class="equipos-grid" id="equipos-grid">
+    <p style="color:#888;font-size:0.9rem">Conecta una sesión para ver los equipos.</p>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getDatabase, ref, set, onValue, update, remove, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBJN55Mv4YCb2LKvQxrMU_lptAN6BCCx1c",
+      authDomain: "union-agronegocios-lean.firebaseapp.com",
+      databaseURL: "https://union-agronegocios-lean-default-rtdb.firebaseio.com",
+      projectId: "union-agronegocios-lean",
+      storageBucket: "union-agronegocios-lean.firebasestorage.app",
+      messagingSenderId: "181432386406",
+      appId: "1:181432386406:web:6804ed3af0e343cdc2bea7"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const COLORES = { amarillo: '#f5c518', naranja: '#ff7f00', rojo: '#e94560', verde: '#28a745', materialista: '#17a2b8', calidad: '#6f42c1' };
+    const ROLES_PROD = ['amarillo', 'naranja', 'rojo', 'verde'];
+    const LOTE = { 1: 4, 2: 2, 3: 1 };
+    const ETAPA_NOMBRE = { 1: 'Etapa 1 — Lote 4', 2: 'Etapa 2 — Lote 2', 3: 'Etapa 3 — Flujo 1' };
+
+    let sesion = '';
+    let etapaActual = 1;
+
+    window.conectar = function() {
+      sesion = document.getElementById('inp-sesion').value.trim().toUpperCase();
+      if (!sesion) { alert('Ingresa un código de sesión.'); return; }
+      onValue(ref(db, `sesiones/${sesion}`), (snap) => {
+        const data = snap.val() || {};
+        etapaActual = data.etapaActiva || 1;
+        renderAll(data);
+      });
+    };
+
+    window.setEtapa = function(n) {
+      if (!sesion) { alert('Conecta primero.'); return; }
+      etapaActual = n;
+      set(ref(db, `sesiones/${sesion}/etapaActiva`), n);
+    };
+
+    window.iniciarEtapa = async function() {
+      if (!sesion) { alert('Conecta primero.'); return; }
+      const n = parseInt(document.getElementById('inp-ntarjetas').value) || 40;
+      const lote = LOTE[etapaActual];
+      const updates = {};
+      for (let eq = 1; eq <= 6; eq++) {
+        updates[`sesiones/${sesion}/equipos/${eq}/etapas/${etapaActual}/tarjetas`] = null;
+        for (let i = 1; i <= n; i++) {
+          const id = `t${String(i).padStart(3,'0')}`;
+          updates[`sesiones/${sesion}/equipos/${eq}/etapas/${etapaActual}/tarjetas/${id}`] = {
+            numero: i, amarillo: false, naranja: false, rojo: false, verde: false,
+            completada: false, lote: Math.ceil(i / lote)
+          };
+        }
+        updates[`sesiones/${sesion}/equipos/${eq}/metricas`] = { entregadas: 0, wip: 0, defectos: 0 };
+      }
+      await update(ref(db), updates);
+      alert(`✅ Etapa ${etapaActual} iniciada con ${n} tarjetas por equipo.`);
+    };
+
+    window.resetSesion = async function() {
+      if (!sesion) return;
+      if (!confirm('¿Resetear toda la sesión? Se borrarán todos los datos.')) return;
+      await remove(ref(db, `sesiones/${sesion}`));
+      document.getElementById('equipos-grid').innerHTML = '<p style="color:#888">Sesión reseteada.</p>';
+    };
+
+    window.registrarDefecto = async function(eq) {
+      if (!sesion) return;
+      const mRef = ref(db, `sesiones/${sesion}/equipos/${eq}/metricas/defectos`);
+      const snap = await get(mRef);
+      await set(mRef, (snap.val() || 0) + 1);
+    };
+
+    function renderAll(data) {
+      const equipos = data.equipos || {};
+      const etapa = data.etapaActiva || 1;
+      document.getElementById('g-etapa').textContent = ETAPA_NOMBRE[etapa] || '—';
+
+      let totalEntregadas = 0, totalWip = 0, totalDefectos = 0, totalJugadores = 0;
+      let html = '';
+
+      for (let eq = 1; eq <= 6; eq++) {
+        const eqData = equipos[eq] || {};
+        const jugadores = eqData.jugadores || {};
+        const metricas = eqData.metricas || {};
+        const tarjetas = ((eqData.etapas || {})[etapa] || {}).tarjetas || {};
+        const nJugadores = Object.keys(jugadores).length;
+        const entregadas = metricas.entregadas || 0;
+        const wip = metricas.wip || 0;
+        const defectos = metricas.defectos || 0;
+        totalEntregadas += entregadas; totalWip += wip; totalDefectos += defectos; totalJugadores += nJugadores;
+
+        let tarjetasHtml = '';
+        Object.values(tarjetas).slice(0, 40).forEach(t => {
+          tarjetasHtml += `<div class="tcard ${t.completada ? 'completa' : ''}">`;
+          ROLES_PROD.forEach(r => {
+            tarjetasHtml += `<div class="tcard-dot" style="background:${t[r] ? COLORES[r] : '#21262d'}"></div>`;
+          });
+          tarjetasHtml += '</div>';
+        });
+
+        let jugHtml = '';
+        Object.values(jugadores).forEach(j => {
+          jugHtml += `<span class="jugador-badge" style="border-left-color:${COLORES[j.rol]||'#888'}">${j.nombre||j.rol}</span>`;
+        });
+
+        html += `<div class="equipo-card">
+          <div class="equipo-header">
+            <span class="equipo-title">Equipo ${eq}</span>
+            <span class="online-count">${nJugadores} online</span>
+          </div>
+          <div class="metrics-row">
+            <div class="metric"><div class="val">${entregadas}</div><div class="lbl">Entregadas</div></div>
+            <div class="metric"><div class="val">${wip}</div><div class="lbl">WIP</div></div>
+            <div class="metric"><div class="val" style="color:#e94560">${defectos}</div><div class="lbl">Defectos</div></div>
+          </div>
+          <div class="tarjetas-mini">${tarjetasHtml || '<span style="color:#666;font-size:0.75rem">Sin tarjetas</span>'}</div>
+          <button class="defecto-btn" onclick="registrarDefecto(${eq})">+ Registrar defecto</button>
+          <div class="jugadores-list">${jugHtml || '<span style="color:#666;font-size:0.7rem">Nadie conectado aún</span>'}</div>
+        </div>`;
+      }
+
+      document.getElementById('equipos-grid').innerHTML = html;
+      document.getElementById('g-entregadas').textContent = totalEntregadas;
+      document.getElementById('g-wip').textContent = totalWip;
+      document.getElementById('g-defectos').textContent = totalDefectos;
+      document.getElementById('g-jugadores').textContent = totalJugadores;
+    }
+  </script>
+</body>
+</html>

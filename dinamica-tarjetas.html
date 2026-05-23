@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fábrica de Tarjetas — Jugador</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+    h1 { font-size: 1.4rem; margin-bottom: 6px; color: #f0c040; text-align: center; }
+    .subtitle { font-size: 0.85rem; color: #aaa; margin-bottom: 24px; text-align: center; }
+    .card { background: #16213e; border-radius: 12px; padding: 24px; width: 100%; max-width: 480px; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
+    label { display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 6px; }
+    input, select { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #333; background: #0f3460; color: #fff; font-size: 1rem; margin-bottom: 16px; }
+    button.primary { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #e94560; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    button.primary:hover { background: #c73652; }
+    button.primary:disabled { background: #555; cursor: not-allowed; }
+    #game-area { display: none; }
+    .stage-badge { display: inline-block; background: #0f3460; border: 1px solid #e94560; border-radius: 20px; padding: 4px 14px; font-size: 0.8rem; color: #f0c040; margin-bottom: 16px; }
+    .rol-badge { display: flex; align-items: center; gap: 10px; background: #0f3460; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; font-size: 1rem; font-weight: 600; }
+    .color-dot { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; }
+    .tarjeta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .tarjeta-item { background: #0f3460; border-radius: 10px; padding: 14px; text-align: center; border: 2px solid transparent; transition: border 0.2s; }
+    .tarjeta-item.completada { border-color: #28a745; opacity: 0.6; }
+    .tarjeta-item .num { font-size: 0.75rem; color: #aaa; margin-bottom: 6px; }
+    .tarjeta-item .estado { font-size: 0.85rem; font-weight: 600; }
+    .btn-pegar { width: 100%; padding: 10px; border-radius: 8px; border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-top: 6px; transition: background 0.2s; }
+    .lote-info { background: #0a1628; border-radius: 8px; padding: 10px 14px; font-size: 0.8rem; color: #aaa; margin-bottom: 16px; line-height: 1.5; }
+    .lote-info span { color: #f0c040; font-weight: 600; }
+    #status-msg { font-size: 0.85rem; color: #f0c040; text-align: center; min-height: 20px; margin-top: 8px; }
+    #waiting-msg { text-align: center; color: #aaa; font-size: 0.9rem; padding: 20px; }
+    .metrics-row { display: flex; gap: 10px; margin-bottom: 16px; }
+    .metric { flex: 1; background: #0f3460; border-radius: 8px; padding: 10px; text-align: center; }
+    .metric .val { font-size: 1.4rem; font-weight: 700; color: #f0c040; }
+    .metric .lbl { font-size: 0.7rem; color: #aaa; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <h1>🏭 Fábrica de Tarjetas</h1>
+  <p class="subtitle">Unión Agronegocios — Lean White Belt</p>
+
+  <div class="card" id="login-area">
+    <label>Código de Sesión (dado por el instructor)</label>
+    <input type="text" id="inp-sesion" placeholder="Ej: LSS2026" maxlength="12">
+    <label>Número de Equipo</label>
+    <select id="inp-equipo">
+      <option value="">-- Selecciona tu equipo --</option>
+      <option value="1">Equipo 1</option>
+      <option value="2">Equipo 2</option>
+      <option value="3">Equipo 3</option>
+      <option value="4">Equipo 4</option>
+      <option value="5">Equipo 5</option>
+      <option value="6">Equipo 6</option>
+    </select>
+    <label>Tu Rol (color de etiqueta)</label>
+    <select id="inp-rol">
+      <option value="">-- Selecciona tu rol --</option>
+      <option value="amarillo">🟡 Amarillo</option>
+      <option value="naranja">🟠 Naranja</option>
+      <option value="rojo">🔴 Rojo</option>
+      <option value="verde">🟢 Verde</option>
+      <option value="materialista">📦 Materialista</option>
+      <option value="calidad">✅ Calidad / Inspector</option>
+    </select>
+    <label>Tu nombre (opcional)</label>
+    <input type="text" id="inp-nombre" placeholder="Ej: Juan" maxlength="20">
+    <button class="primary" onclick="entrar()">Entrar al juego</button>
+  </div>
+
+  <div class="card" id="game-area">
+    <div id="stage-info" class="stage-badge">Etapa 1 — Lote de 4</div>
+    <div id="rol-display" class="rol-badge">
+      <div class="color-dot" id="color-dot"></div>
+      <span id="rol-nombre">—</span>
+      <span style="margin-left:auto;font-size:0.75rem;color:#aaa" id="equipo-display"></span>
+    </div>
+    <div class="lote-info" id="lote-info">Cargando...</div>
+    <div class="metrics-row">
+      <div class="metric"><div class="val" id="m-entregadas">0</div><div class="lbl">Entregadas</div></div>
+      <div class="metric"><div class="val" id="m-wip">0</div><div class="lbl">WIP</div></div>
+      <div class="metric"><div class="val" id="m-defectos">0</div><div class="lbl">Defectos</div></div>
+    </div>
+    <div id="tarjetas-container"><div id="waiting-msg">⏳ Esperando inicio de etapa...</div></div>
+    <div id="status-msg"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getDatabase, ref, set, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBJN55Mv4YCb2LKvQxrMU_lptAN6BCCx1c",
+      authDomain: "union-agronegocios-lean.firebaseapp.com",
+      databaseURL: "https://union-agronegocios-lean-default-rtdb.firebaseio.com",
+      projectId: "union-agronegocios-lean",
+      storageBucket: "union-agronegocios-lean.firebasestorage.app",
+      messagingSenderId: "181432386406",
+      appId: "1:181432386406:web:6804ed3af0e343cdc2bea7"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const COLORES = {
+      amarillo: '#f5c518',
+      naranja: '#ff7f00',
+      rojo: '#e94560',
+      verde: '#28a745',
+      materialista: '#17a2b8',
+      calidad: '#6f42c1'
+    };
+
+    const LOTE_CONFIG = {
+      1: { lote: 4, nombre: 'Etapa 1 — Lote de 4', desc: 'Trabaja en lotes de <span>4 tarjetas</span>. Pega tu etiqueta en las 4 antes de pasarlas.' },
+      2: { lote: 2, nombre: 'Etapa 2 — Lote de 2', desc: 'Trabaja en lotes de <span>2 tarjetas</span>. Pega y pasa de a 2.' },
+      3: { lote: 1, nombre: 'Etapa 3 — Flujo unitario', desc: 'Flujo unitario: <span>1 tarjeta a la vez</span>. Pega y pasa inmediatamente.' }
+    };
+
+    let sesion, equipo, rol, nombre;
+    let etapaActual = 1;
+    let tarjetasListener = null;
+
+    window.entrar = function() {
+      sesion = document.getElementById('inp-sesion').value.trim().toUpperCase();
+      equipo = document.getElementById('inp-equipo').value;
+      rol = document.getElementById('inp-rol').value;
+      nombre = document.getElementById('inp-nombre').value.trim() || rol;
+      if (!sesion || !equipo || !rol) { alert('Completa todos los campos requeridos.'); return; }
+
+      document.getElementById('login-area').style.display = 'none';
+      document.getElementById('game-area').style.display = 'block';
+      document.getElementById('color-dot').style.background = COLORES[rol] || '#888';
+      document.getElementById('rol-nombre').textContent = nombre + ' (' + rol + ')';
+      document.getElementById('equipo-display').textContent = 'Equipo ' + equipo;
+
+      const jugadorRef = ref(db, `sesiones/${sesion}/equipos/${equipo}/jugadores/${rol}`);
+      set(jugadorRef, { nombre, rol, online: true });
+
+      const etapaRef = ref(db, `sesiones/${sesion}/etapaActiva`);
+      onValue(etapaRef, (snap) => {
+        const val = snap.val();
+        etapaActual = val || 1;
+        actualizarUI();
+        escucharTarjetas();
+      });
+
+      const metricsRef = ref(db, `sesiones/${sesion}/equipos/${equipo}/metricas`);
+      onValue(metricsRef, (snap) => {
+        const m = snap.val() || {};
+        document.getElementById('m-entregadas').textContent = m.entregadas || 0;
+        document.getElementById('m-wip').textContent = m.wip || 0;
+        document.getElementById('m-defectos').textContent = m.defectos || 0;
+      });
+    };
+
+    function actualizarUI() {
+      const cfg = LOTE_CONFIG[etapaActual] || LOTE_CONFIG[1];
+      document.getElementById('stage-info').textContent = cfg.nombre;
+      document.getElementById('lote-info').innerHTML = cfg.desc;
+    }
+
+    function escucharTarjetas() {
+      if (tarjetasListener) tarjetasListener();
+      const tarjRef = ref(db, `sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas`);
+      tarjetasListener = onValue(tarjRef, (snap) => {
+        renderTarjetas(snap.val() || {});
+      });
+    }
+
+    function renderTarjetas(tarjetas) {
+      const container = document.getElementById('tarjetas-container');
+      const ids = Object.keys(tarjetas);
+      if (ids.length === 0) {
+        container.innerHTML = '<div id="waiting-msg">⏳ Esperando que el instructor inicie la etapa...</div>';
+        return;
+      }
+      let html = '<div class="tarjeta-grid">';
+      ids.forEach(id => {
+        const t = tarjetas[id];
+        const yaPegue = t[rol] === true;
+        const completa = t.completada === true;
+        const color = COLORES[rol] || '#888';
+        html += `<div class="tarjeta-item ${completa ? 'completada' : ''}">
+          <div class="num">Tarjeta #${t.numero || id.slice(-4)}</div>
+          <div class="estado" style="color:${yaPegue ? '#28a745' : '#aaa'}">${completa ? '✅ Completa' : yaPegue ? '✔ Tu etiqueta pegada' : '⬜ Pendiente'}</div>
+          ${!yaPegue && !completa ? `<button class="btn-pegar" style="background:${color};color:#fff" onclick="pegarEtiqueta('${id}')">Pegar etiqueta ${rol}</button>` : ''}
+        </div>`;
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    window.pegarEtiqueta = async function(tarjetaId) {
+      const path = `sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${tarjetaId}`;
+      const snap = await get(ref(db, path));
+      const t = snap.val() || {};
+      const updates = {};
+      updates[`${path}/${rol}`] = true;
+      const rolesRequeridos = ['amarillo', 'naranja', 'rojo', 'verde'];
+      const completada = rolesRequeridos.every(r => r === rol ? true : t[r] === true);
+      if (completada) {
+        updates[`${path}/completada`] = true;
+        updates[`${path}/timestampCompleta`] = Date.now();
+        const mSnap = await get(ref(db, `sesiones/${sesion}/equipos/${equipo}/metricas/entregadas`));
+        updates[`sesiones/${sesion}/equipos/${equipo}/metricas/entregadas`] = (mSnap.val() || 0) + 1;
+      }
+      await update(ref(db), updates);
+      document.getElementById('status-msg').textContent = completada ? '🎉 ¡Tarjeta completada!' : '✔ Etiqueta pegada correctamente';
+      setTimeout(() => document.getElementById('status-msg').textContent = '', 2500);
+    };
+  </script>
+</body>
+</html>
