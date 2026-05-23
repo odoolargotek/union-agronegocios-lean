@@ -35,7 +35,6 @@
     .lote-info b { color: #f0c040; }
     #status-msg { font-size: 0.85rem; color: #f0c040; text-align: center; min-height: 18px; margin: 6px 0; }
     #waiting-msg { text-align: center; color: #aaa; padding: 30px 10px; font-size: 0.9rem; line-height: 1.6; }
-
     .btn-enviar-salida { width: 100%; padding: 14px; border-radius: 10px; border: none;
                     background: linear-gradient(135deg,#1a8a3a,#0d6e2e); color: #fff;
                     font-size: 1.05rem; font-weight: 700; cursor: pointer; margin-bottom: 12px;
@@ -43,12 +42,10 @@
                     transition: transform 0.1s; }
     .btn-enviar-salida:active { transform: scale(0.97); }
     .btn-enviar-salida:disabled { background: #444; box-shadow: none; cursor: not-allowed; }
-
     .salida-banner { background: #0d2518; border: 1px solid #1a8a3a55; border-radius: 8px;
                      padding: 8px 12px; margin-bottom: 10px; font-size: 0.78rem; color: #1a8a3a;
                      display: flex; align-items: center; gap: 8px; }
     .salida-banner .sal-count { font-size: 1.1rem; font-weight: 900; color: #28a745; }
-
     .paper-card { background: #fffef0; border-radius: 8px;
                   box-shadow: 2px 3px 12px rgba(0,0,0,0.5); padding: 12px 12px 8px;
                   margin-bottom: 12px; color: #222; user-select: none; }
@@ -67,9 +64,10 @@
                  background: #f5f5f0; display: flex; align-items: center; justify-content: center;
                  font-size: 0.58rem; color: #bbb; position: relative;
                  transition: border 0.2s, background 0.2s; flex-shrink: 0; }
-    .drop-zone.mia  { cursor: pointer; }
-    .drop-zone.over { border-color: #e94560; background: #fff0f3; }
-    .drop-zone.filled { border-style: solid; border-color: transparent; background: transparent; }
+    .drop-zone.mia       { cursor: pointer; }
+    .drop-zone.corregible { cursor: pointer; border-style: dashed; border-color: #d29922; background: #fffbe6; }
+    .drop-zone.over      { border-color: #e94560; background: #fff0f3; }
+    .drop-zone.filled    { border-style: solid; border-color: transparent; background: transparent; }
     .etiqueta-pegada { width: 100%; height: 100%; border-radius: 4px; display: flex;
                        align-items: center; justify-content: center; font-size: 0.55rem;
                        font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.4); position: relative; }
@@ -134,7 +132,7 @@
       <span style="margin-left:auto;font-size:0.72rem;color:#888" id="equipo-display"></span>
     </div>
     <div class="lote-info" id="lote-info">Cargando...</div>
-    <div class="metrics-row">
+    <div class="metrics-row" id="metrics-row">
       <div class="metric"><div class="val" id="m-entregadas">0</div><div class="lbl">Entregadas</div></div>
       <div class="metric"><div class="val" id="m-wip">0</div><div class="lbl">WIP</div></div>
       <div class="metric"><div class="val" id="m-defectos">0</div><div class="lbl">Defectos</div></div>
@@ -173,7 +171,7 @@
     const LOTE_CONFIG = {
       1: { nombre:'Etapa 1 — Libre', desc:'Fabrica y presiona <b>Enviar a Salida</b> cuando quieras. El materialista mueve las cajas.' },
       2: { nombre:'Etapa 2 — Lote de 2', desc:'Trabaja de <b>2 en 2</b>. Al enviar, la tarjeta pasa <b>directo</b> al siguiente operario.' },
-      3: { nombre:'Etapa 3 — Flujo unitario', desc:'Envía <b>tarjeta por tarjeta</b>. Verás tu <b>score en tiempo real</b> 🎯.' }
+      3: { nombre:'Etapa 3 — Flujo unitario', desc:'Envía <b>tarjeta por tarjeta</b>. Ve tu <b>score en tiempo real</b> 🎯 y <b>corrige</b> etiquetas malas antes de enviar.' }
     };
 
     const UMBRAL_OK       = 10;
@@ -184,11 +182,10 @@
 
     let sesion, equipo, rol, nombre, etapaActual=1, tarjetasListener=null, tarjetasData={};
 
-    // Etapa 3: score visible al operario
     function scoreVisible()     { return etapaActual >= 3; }
     function precisionVisible() { return etapaActual >= 3; }
-    // Etapas 2 y 3: flujo directo sin materialista
     function flujoDirecto()     { return etapaActual >= 2; }
+    function puedeCorregir()    { return etapaActual >= 3; }
 
     window.entrar = function() {
       sesion = document.getElementById('inp-sesion').value.trim().toUpperCase();
@@ -208,9 +205,11 @@
       });
       onValue(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas`), snap => {
         const m=snap.val()||{};
-        document.getElementById('m-entregadas').textContent = m.entregadas||0;
-        document.getElementById('m-wip').textContent        = m.wip||0;
-        document.getElementById('m-defectos').textContent   = m.defectos||0;
+        document.getElementById('m-entregadas').textContent  = m.entregadas||0;
+        document.getElementById('m-wip').textContent         = m.wip||0;
+        document.getElementById('m-defectos').textContent    = m.defectos||0;
+        const mCorr = document.getElementById('m-correcciones');
+        if (mCorr) mCorr.textContent = m.correcciones||0;
       });
     };
 
@@ -218,6 +217,20 @@
       const cfg=LOTE_CONFIG[etapaActual]||LOTE_CONFIG[1];
       document.getElementById('stage-info').textContent = cfg.nombre;
       document.getElementById('lote-info').innerHTML    = cfg.desc;
+      // Mostrar métrica Correcciones solo en etapa 3
+      const row = document.getElementById('metrics-row');
+      if (etapaActual >= 3) {
+        if (!document.getElementById('m-correcciones')) {
+          row.insertAdjacentHTML('beforeend',
+            `<div class="metric" id="metric-correcciones">
+               <div class="val" id="m-correcciones" style="color:#d29922">0</div>
+               <div class="lbl">Correcciones</div>
+             </div>`);
+        }
+      } else {
+        const mc = document.getElementById('metric-correcciones');
+        if (mc) mc.remove();
+      }
     }
 
     function escucharTarjetas() {
@@ -239,8 +252,6 @@
       const misPosiciones = POSICIONES.filter(p => p.color === rol);
       const todas = ids.sort((a,b) => (tarjetasData[a].numero||0)-(tarjetasData[b].numero||0));
 
-      // En etapas 2/3 el flujo es directo: el campo entrada_{rol} lo escribimos nosotros al enviar
-      // Amarillo siempre puede empezar (no espera a nadie)
       const enEntrada = todas.filter(id => {
         const t = tarjetasData[id];
         if (t[`salida_${rol}`]) return false;
@@ -248,7 +259,6 @@
         return !!t[`entrada_${rol}`] && !t[`salida_${rol}`];
       });
 
-      // En bandeja de salida: ya procesé pero en etapa 1 aún espero al materialista
       const idxRol = ORDEN_TURNOS.indexOf(rol);
       const siguiente = idxRol < ORDEN_TURNOS.length - 1 ? ORDEN_TURNOS[idxRol + 1] : null;
       const enSalida = siguiente ? todas.filter(id => {
@@ -276,11 +286,14 @@
         📤 ENVIAR${puedoEnviar ? ` (${listasParaSalida.length} tarjeta${listasParaSalida.length>1?'s':''})` : ' — termina de pegar etiquetas'}
       </button>`;
 
-      // Banner de salida: solo en etapa 1 (en 2/3 el flujo es directo, no hay espera)
       if (!flujoDirecto() && enSalida.length > 0) {
         html += `<div class="salida-banner">
           📤 Bandeja de Salida — <span class="sal-count">${enSalida.length}</span>&nbsp;tarjeta${enSalida.length>1?'s':''} esperando al materialista
         </div>`;
+      }
+
+      if (puedeCorregir() && listasParaSalida.length) {
+        html += `<div style="font-size:0.7rem;color:#d29922;margin-bottom:6px">⚠️ Etapa 3: puedes re-pegar etiquetas amarillas o rojas antes de enviar</div>`;
       }
 
       if (listasParaSalida.length) {
@@ -293,7 +306,6 @@
         html += enFabricacion.map(id => renderTarjeta(id, tarjetasData[id], true)).join('');
       }
 
-      // Mensaje de espera adaptado a la etapa
       if (!enEntrada.length && rol !== 'amarillo') {
         const msg = flujoDirecto()
           ? '⏳ Esperando tarjetas del operario anterior...'
@@ -312,28 +324,58 @@
       const estadoLabel = yaEnvie?'entregada':t.aprobada?'aprobada':t.rechazada?'rechazada':todasLlenas?'revision':'';
       const estadoTxt   = yaEnvie?'📤 Enviada':t.aprobada?'✅ Aprobada':t.rechazada?'❌ Defecto':todasLlenas?'🔍 Revisión':'';
       const mostrarScore = scoreVisible();
+
       const filas = [0,1].map(row => {
         const zonas = POSICIONES.filter(p => p.row === row).map(pos => {
           const pegada = t[pos.id];
+          const esMio  = pos.color === rol && puedo && !yaEnvie;
+
           if (pegada !== undefined) {
-            const s = pegada.score||0;
+            const s  = pegada.score||0;
             const sc = s>=SCORE_PERFECTO?'perfect':s>=SCORE_MARGINAL?'ok':'bad';
-            const scoreBadge = mostrarScore?`<span class="score-badge ${sc}">${s}%</span>`:'';
-            return `<div class="drop-zone filled"><div class="etiqueta-pegada" style="background:${COLORES[pos.color]}">${(pegada.nombre||pos.color).substring(0,3).toUpperCase()}${scoreBadge}</div></div>`;
+            const scoreBadge = mostrarScore ? `<span class="score-badge ${sc}">${s}%</span>` : '';
+            // En etapa 3, si es mía y el score no es perfecto, habilitar re-drop
+            const esCorregible = puedeCorregir() && esMio && s < SCORE_PERFECTO;
+            const claseZona = esCorregible ? 'drop-zone corregible' : 'drop-zone filled';
+            const dataAttrs = esCorregible ? `data-pos="${pos.id}" data-tid="${id}" data-correccion="1"` : '';
+            return `<div class="${claseZona}" ${dataAttrs}>
+                      <div class="etiqueta-pegada" style="background:${COLORES[pos.color]}">
+                        ${(pegada.nombre||pos.color).substring(0,3).toUpperCase()}${scoreBadge}
+                      </div>
+                    </div>`;
           }
-          const esMio = pos.color===rol && puedo && !yaEnvie;
-          return `<div class="drop-zone${esMio?' mia':''}" data-pos="${pos.id}" data-tid="${id}" style="${esMio?'border-color:'+COLORES[rol]+';':''}">${esMio?'<span style="color:'+COLORES[rol]+';font-size:0.55rem">drop</span>':''}</div>`;
+
+          return `<div class="drop-zone${esMio?' mia':''}" data-pos="${pos.id}" data-tid="${id}" style="${esMio?'border-color:'+COLORES[rol]+';':''}">
+                    ${esMio?'<span style="color:'+COLORES[rol]+';font-size:0.55rem">drop</span>':''}
+                  </div>`;
         }).join('');
         return `<div class="etiqueta-fila">${zonas}</div>`;
       }).join('');
+
       const meFalta = misPosiciones.some(p => t[p.id] === undefined);
-      const dragHtml = meFalta && puedo && !yaEnvie
-        ? `<div class="drag-area"><div class="da-label">Arrastra tu etiqueta ↓</div><div class="draggable-etiqueta" style="background:${COLORES[rol]}" draggable="true" data-tid="${id}" ontouchstart="touchStart(event)" ontouchmove="touchMove(event)" ontouchend="touchEnd(event)">${nombre.substring(0,4).toUpperCase()}</div></div>`
+      // En etapa 3 mostrar drag-area también si hay corregibles
+      const hayCorregibles = puedeCorregir() && puedo && !yaEnvie &&
+        misPosiciones.some(p => t[p.id] !== undefined && (t[p.id].score||0) < SCORE_PERFECTO);
+      const dragHtml = (meFalta || hayCorregibles) && puedo && !yaEnvie
+        ? `<div class="drag-area">
+             <div class="da-label">${meFalta ? 'Arrastra tu etiqueta ↓' : '🔄 Re-arrastra para corregir ↓'}</div>
+             <div class="draggable-etiqueta" style="background:${COLORES[rol]}" draggable="true" data-tid="${id}"
+                  ontouchstart="touchStart(event)" ontouchmove="touchMove(event)" ontouchend="touchEnd(event)">
+               ${nombre.substring(0,4).toUpperCase()}
+             </div>
+           </div>`
         : '';
-      return `<div class="paper-card${yaEnvie?' entregada-card':''}" id="pc-${id}"><div class="card-header"><span class="card-num">TARJETA #${t.numero}</span><span class="card-logo">UA Lean</span>${estadoLabel?`<span class="card-estado ${estadoLabel}">${estadoTxt}</span>`:''}</div>${filas}${dragHtml}</div>`;
+
+      return `<div class="paper-card${yaEnvie?' entregada-card':''}" id="pc-${id}">
+                <div class="card-header">
+                  <span class="card-num">TARJETA #${t.numero}</span>
+                  <span class="card-logo">UA Lean</span>
+                  ${estadoLabel?`<span class="card-estado ${estadoLabel}">${estadoTxt}</span>`:''}
+                </div>
+                ${filas}${dragHtml}
+              </div>`;
     }
 
-    // Enviar a salida — en etapas 2/3 también escribe entrada_{siguiente} automáticamente
     window.enviarASalida = async function() {
       const ids = Object.keys(tarjetasData);
       const misPosiciones = POSICIONES.filter(p => p.color === rol);
@@ -350,14 +392,12 @@
 
       aEnviar.forEach(id => {
         const basePath = `sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${id}`;
-        updates[`${basePath}/salida_${rol}`]     = ts;
-        updates[`${basePath}/entregado_${rol}`]  = ts;  // compatibilidad instructor
+        updates[`${basePath}/salida_${rol}`]    = ts;
+        updates[`${basePath}/entregado_${rol}`] = ts;
         if (flujoDirecto()) {
-          // Flujo directo: escribir entrada del siguiente sin esperar materialista
           if (siguiente) {
             updates[`${basePath}/entrada_${siguiente}`] = ts;
           } else {
-            // Verde → Calidad directamente
             updates[`${basePath}/entrada_calidad`] = ts;
           }
         }
@@ -374,32 +414,75 @@
       document.querySelectorAll('.draggable-etiqueta').forEach(el => {
         el.addEventListener('dragstart', e => { dragTid=el.dataset.tid; e.dataTransfer.effectAllowed='move'; });
       });
-      document.querySelectorAll('.drop-zone.mia').forEach(zone => {
+      // Zonas vacías (mia) y corregibles
+      document.querySelectorAll('.drop-zone.mia, .drop-zone.corregible').forEach(zone => {
         zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('over'); });
         zone.addEventListener('dragleave', () => zone.classList.remove('over'));
-        zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('over'); pegarEtiqueta(zone.dataset.tid, zone.dataset.pos, e.clientX, e.clientY, zone); });
+        zone.addEventListener('drop', e => {
+          e.preventDefault(); zone.classList.remove('over');
+          const esCorreccion = zone.dataset.correccion === '1';
+          pegarEtiqueta(zone.dataset.tid, zone.dataset.pos, e.clientX, e.clientY, zone, esCorreccion);
+        });
       });
     }
 
     const ghost = document.getElementById('drag-ghost');
-    window.touchStart = function(e) { dragTid=e.currentTarget.dataset.tid; ghost.style.background=COLORES[rol]; ghost.textContent=nombre.substring(0,4).toUpperCase(); ghost.style.display='flex'; };
-    window.touchMove  = function(e) { e.preventDefault(); const t=e.touches[0]; ghost.style.left=t.clientX+'px'; ghost.style.top=t.clientY+'px'; document.querySelectorAll('.drop-zone.over').forEach(z=>z.classList.remove('over')); document.elementFromPoint(t.clientX,t.clientY)?.closest('.drop-zone.mia')?.classList.add('over'); };
-    window.touchEnd   = function(e) { ghost.style.display='none'; const t=e.changedTouches[0]; document.querySelectorAll('.drop-zone.over').forEach(z=>z.classList.remove('over')); const zone=document.elementFromPoint(t.clientX,t.clientY)?.closest('.drop-zone.mia'); if(zone) pegarEtiqueta(zone.dataset.tid, zone.dataset.pos, t.clientX, t.clientY, zone); };
+    window.touchStart = function(e) {
+      dragTid=e.currentTarget.dataset.tid;
+      ghost.style.background=COLORES[rol];
+      ghost.textContent=nombre.substring(0,4).toUpperCase();
+      ghost.style.display='flex';
+    };
+    window.touchMove = function(e) {
+      e.preventDefault();
+      const t=e.touches[0];
+      ghost.style.left=t.clientX+'px'; ghost.style.top=t.clientY+'px';
+      document.querySelectorAll('.drop-zone.over').forEach(z=>z.classList.remove('over'));
+      document.elementFromPoint(t.clientX,t.clientY)?.closest('.drop-zone.mia, .drop-zone.corregible')?.classList.add('over');
+    };
+    window.touchEnd = function(e) {
+      ghost.style.display='none';
+      const t=e.changedTouches[0];
+      document.querySelectorAll('.drop-zone.over').forEach(z=>z.classList.remove('over'));
+      const zone=document.elementFromPoint(t.clientX,t.clientY)?.closest('.drop-zone.mia, .drop-zone.corregible');
+      if(zone) {
+        const esCorreccion = zone.dataset.correccion === '1';
+        pegarEtiqueta(zone.dataset.tid, zone.dataset.pos, t.clientX, t.clientY, zone, esCorreccion);
+      }
+    };
 
-    async function pegarEtiqueta(tarjetaId, posId, dropX, dropY, zoneEl) {
+    async function pegarEtiqueta(tarjetaId, posId, dropX, dropY, zoneEl, esCorreccion=false) {
       const rect = zoneEl.getBoundingClientRect();
       const dist = Math.sqrt((dropX-rect.left-rect.width/2)**2+(dropY-rect.top-rect.height/2)**2);
       let score;
       if (dist<=UMBRAL_OK) score=Math.round(100-(dist/UMBRAL_OK)*5);
       else if (dist<=UMBRAL_MARGINAL) score=Math.round(95-((dist-UMBRAL_OK)/(UMBRAL_MARGINAL-UMBRAL_OK))*25);
       else score=Math.max(0,Math.round(70-((dist-UMBRAL_MARGINAL)/18)*70));
+
       const path=`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${tarjetaId}`;
-      await update(ref(db),{[`${path}/${posId}`]:{score,nombre,rol,ts:Date.now()}});
-      if (precisionVisible()) setStatus(`${score>=SCORE_PERFECTO?'🎯':score>=SCORE_MARGINAL?'⚠️':'💥'} Precisión: ${score}%`);
-      else setStatus('✅ Etiqueta pegada');
+      const updates = { [`${path}/${posId}`]: { score, nombre, rol, ts: Date.now() } };
+
+      // Si es corrección, sumar al contador de correcciones
+      if (esCorreccion) {
+        const snapCorr = await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/correcciones`));
+        updates[`sesiones/${sesion}/equipos/${equipo}/metricas/correcciones`] = (snapCorr.val()||0) + 1;
+      }
+
+      await update(ref(db), updates);
+
+      if (precisionVisible()) {
+        const emoji = score>=SCORE_PERFECTO?'🎯':score>=SCORE_MARGINAL?'⚠️':'💥';
+        const extra = esCorreccion ? ' (corrección)' : '';
+        setStatus(`${emoji} Precisión: ${score}%${extra}`);
+      } else {
+        setStatus('✅ Etiqueta pegada');
+      }
     }
 
-    function setStatus(msg) { document.getElementById('status-msg').textContent=msg; setTimeout(()=>document.getElementById('status-msg').textContent='',3000); }
+    function setStatus(msg) {
+      document.getElementById('status-msg').textContent=msg;
+      setTimeout(()=>document.getElementById('status-msg').textContent='',3000);
+    }
   </script>
 </body>
 </html>
