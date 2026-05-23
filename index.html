@@ -7,6 +7,10 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif}
 body{background:#060e06;color:#f5f5f5;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.branding{display:flex;align-items:center;gap:10px;margin-bottom:16px;opacity:0.85;}
+.branding img{height:32px;filter:brightness(0) invert(1);}
+.branding-sep{width:1px;height:24px;background:#2a4a2a;}
+.branding-client{font-size:11px;color:#a5d6a7;letter-spacing:1px;text-transform:uppercase;}
 .logo{font-size:11px;color:#a5d6a7;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
 h1{font-size:24px;font-weight:900;color:#81c784;margin-bottom:4px;text-align:center}
 .sub{font-size:13px;color:#c8e6c9;margin-bottom:32px;text-align:center}
@@ -23,11 +27,16 @@ h1{font-size:24px;font-weight:900;color:#81c784;margin-bottom:4px;text-align:cen
 .badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:999px;margin-top:8px}
 .card.ford .badge{background:#ffb74d;color:#1a1a00}
 .card.lean .badge{background:#81c784;color:#003300}
-footer{margin-top:32px;font-size:10px;color:#546e7a;text-align:center}
+footer{margin-top:32px;font-size:10px;color:#546e7a;text-align:center;display:flex;align-items:center;gap:8px;justify-content:center;}
+footer img{height:14px;filter:brightness(0) invert(1);opacity:0.5;}
 </style>
 </head>
 <body>
-<div class="logo">Unión Agronegocios · Lean Six Sigma White Belt</div>
+<div class="branding">
+  <img src="https://www.largotek.com/web/image/website/2/logo/www.largotek.com?unique=d82f80f" alt="Largotek">
+  <div class="branding-sep"></div>
+  <span class="branding-client">Unión Agronegocios · Lean Six Sigma White Belt</span>
+</div>
 <h1>Fábrica de Tarjetas</h1>
 <div class="sub">Dinámica de introducción a Lean — Simuladores interactivos</div>
 <div class="cards">
@@ -43,7 +52,22 @@ footer{margin-top:32px;font-size:10px;color:#546e7a;text-align:center}
     <div class="card-desc">Sistema Kanban: cada estación produce solo cuando el siguiente proceso lo necesita. Flujo controlado, WIP limitado.</div>
     <span class="badge">ETAPA 3 — LEAN</span>
   </a>
+  <a href="dinamica-tarjetas.html" class="card lean">
+    <div class="card-icon">🃏</div>
+    <div class="card-title">Dinámica Tarjetas</div>
+    <div class="card-desc">Simulación multijugador en tiempo real. Operarios etiquetan tarjetas y las entregan al siguiente proceso.</div>
+    <span class="badge">MULTIJUGADOR</span>
+  </a>
+  <a href="instructor.html" class="card ford">
+    <div class="card-icon">🎓</div>
+    <div class="card-title">Panel Instructor</div>
+    <div class="card-desc">Vista en tiempo real de todos los equipos: WIP, pipeline, scores, tiempos de ejecución y espera por operario.</div>
+    <span class="badge">INSTRUCTOR</span>
+  </a>
 </div>
-<footer>Largotek SRL · Entrenamiento Lean · 2026</footer>
+<footer>
+  <img src="https://www.largotek.com/web/image/website/2/logo/www.largotek.com?unique=d82f80f" alt="Largotek">
+  Largotek SRL · Entrenamiento Lean · 2026
+</footer>
 </body>
 </html>
