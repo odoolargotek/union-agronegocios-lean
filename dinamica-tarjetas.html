@@ -169,14 +169,23 @@
       2: { nombre:'Etapa 2 — Lote de 2', desc:'Trabaja de <b>2 en 2</b> y entrega el par.' },
       3: { nombre:'Etapa 3 — Flujo unitario', desc:'Entrega <b>tarjeta por tarjeta</b> de inmediato.' }
     };
-    const UMBRAL_OK = 18, UMBRAL_MARGINAL = 35;
+
+    // ── UMBRALES DE PRECISIÓN ──────────────────────────────────────────
+    // Score PERFECTO (95–100%): distancia <= UMBRAL_OK px del centro
+    // Score MARGINAL (70–94%):  distancia entre UMBRAL_OK y UMBRAL_MARGINAL
+    // Score DEFECTO  (0–69%):   distancia > UMBRAL_MARGINAL
+    const UMBRAL_OK = 10;       // px — zona perfecta más pequeña (antes 18)
+    const UMBRAL_MARGINAL = 22; // px — zona marginal más pequeña (antes 35)
+    // Umbrales de calificación de score
+    const SCORE_PERFECTO  = 95; // antes 85
+    const SCORE_MARGINAL  = 70; // antes 60
+    // ──────────────────────────────────────────────────────────────────
+
     const BANDEJA = 4;
 
     let sesion, equipo, rol, nombre, etapaActual=1, tarjetasListener=null, tarjetasData={};
 
-    // Score visible solo en etapa 3
     function scoreVisible() { return etapaActual >= 3; }
-    // Feedback de precisión visible solo en etapa 3
     function precisionVisible() { return etapaActual >= 3; }
 
     window.entrar = function() {
@@ -264,8 +273,8 @@
         const zonas=POSICIONES.filter(p=>p.row===row).map(pos=>{
           const pegada=t[pos.id];
           if (pegada!==undefined) {
-            // Score: solo visible en etapa 3
-            const s=pegada.score||0, sc=s>=85?'perfect':s>=60?'ok':'bad';
+            const s=pegada.score||0;
+            const sc=s>=SCORE_PERFECTO?'perfect':s>=SCORE_MARGINAL?'ok':'bad';
             const scoreBadge=mostrarScore?`<span class="score-badge ${sc}">${s}%</span>`:'';
             return `<div class="drop-zone filled"><div class="etiqueta-pegada" style="background:${COLORES[pos.color]}">${(pegada.nombre||pos.color).substring(0,3).toUpperCase()}${scoreBadge}</div></div>`;
           }
@@ -318,14 +327,16 @@
       const rect=zoneEl.getBoundingClientRect();
       const dist=Math.sqrt((dropX-rect.left-rect.width/2)**2+(dropY-rect.top-rect.height/2)**2);
       let score;
-      if(dist<=UMBRAL_OK) score=Math.round(100-(dist/UMBRAL_OK)*15);
-      else if(dist<=UMBRAL_MARGINAL) score=Math.round(85-((dist-UMBRAL_OK)/(UMBRAL_MARGINAL-UMBRAL_OK))*25);
-      else score=Math.max(0,Math.round(60-((dist-UMBRAL_MARGINAL)/20)*60));
+      // Zona perfecta (95–100%): dist <= UMBRAL_OK
+      if (dist<=UMBRAL_OK) score=Math.round(100-(dist/UMBRAL_OK)*5);
+      // Zona marginal (70–94%): entre UMBRAL_OK y UMBRAL_MARGINAL
+      else if (dist<=UMBRAL_MARGINAL) score=Math.round(95-((dist-UMBRAL_OK)/(UMBRAL_MARGINAL-UMBRAL_OK))*25);
+      // Zona defecto (0–69%): dist > UMBRAL_MARGINAL
+      else score=Math.max(0,Math.round(70-((dist-UMBRAL_MARGINAL)/18)*70));
       const path=`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${tarjetaId}`;
       await update(ref(db),{[`${path}/${posId}`]:{score,nombre,rol,ts:Date.now()}});
-      // Feedback de precisión: solo visible en etapa 3
       if (precisionVisible()) {
-        setStatus(`${score>=85?'🎯':score>=60?'⚠️':'💥'} Precisión: ${score}%`);
+        setStatus(`${score>=SCORE_PERFECTO?'🎯':score>=SCORE_MARGINAL?'⚠️':'💥'} Precisión: ${score}%`);
       } else {
         setStatus('✅ Etiqueta pegada');
       }
