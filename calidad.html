@@ -129,9 +129,8 @@
     ];
     const COLORES = { amarillo:'#f5c518', naranja:'#e07800', rojo:'#e94560', verde:'#1a8a3a' };
 
-    // ── UMBRALES DE CALIFICACIÓN (deben coincidir con dinamica-tarjetas.html) ──
-    const SCORE_PERFECTO = 95;  // antes 85
-    const SCORE_MARGINAL = 70;  // antes 60
+    const SCORE_PERFECTO = 95;
+    const SCORE_MARGINAL = 70;
 
     let sesion, equipo, nombre, etapaActual=1, tarjetasData={};
 
@@ -171,8 +170,9 @@
       const enCola = ids.filter(id => {
         const t = tarjetasData[id];
         if (t.aprobada || t.rechazada) return false;
-        if (etapaActual === 1) return !!t.entregado_materialista_calidad;
-        return !!t.entregado_verde;
+        // Nuevo flujo: el materialista escribe entrada_calidad
+        // Flujo legacy (etapa anterior): entregado_materialista_calidad o entregado_verde
+        return !!t.entrada_calidad || !!t.entregado_materialista_calidad || !!t.entregado_verde;
       }).sort((a,b)=>(tarjetasData[a].numero||0)-(tarjetasData[b].numero||0));
 
       document.getElementById('m-pendientes').textContent = enCola.length;
