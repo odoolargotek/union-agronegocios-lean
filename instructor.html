@@ -133,9 +133,18 @@
       if (!sesion) { alert('Conecta primero.'); return; }
       const n = parseInt(document.getElementById('inp-ntarjetas').value) || 40;
       const lote = LOTE[etapaActual];
+
+      // PASO 1: borrar tarjetas previas y metricas de todos los equipos (remove separado)
+      const removePromises = [];
+      for (let eq = 1; eq <= 6; eq++) {
+        removePromises.push(remove(ref(db, `sesiones/${sesion}/equipos/${eq}/etapas/${etapaActual}/tarjetas`)));
+        removePromises.push(set(ref(db, `sesiones/${sesion}/equipos/${eq}/metricas`), { entregadas: 0, wip: 0, defectos: 0 }));
+      }
+      await Promise.all(removePromises);
+
+      // PASO 2: escribir tarjetas nuevas en update limpio (sin rutas ancestro)
       const updates = {};
       for (let eq = 1; eq <= 6; eq++) {
-        updates[`sesiones/${sesion}/equipos/${eq}/etapas/${etapaActual}/tarjetas`] = null;
         for (let i = 1; i <= n; i++) {
           const id = `t${String(i).padStart(3,'0')}`;
           updates[`sesiones/${sesion}/equipos/${eq}/etapas/${etapaActual}/tarjetas/${id}`] = {
@@ -143,7 +152,6 @@
             completada: false, lote: Math.ceil(i / lote)
           };
         }
-        updates[`sesiones/${sesion}/equipos/${eq}/metricas`] = { entregadas: 0, wip: 0, defectos: 0 };
       }
       await update(ref(db), updates);
       alert(`✅ Etapa ${etapaActual} iniciada con ${n} tarjetas por equipo.`);
