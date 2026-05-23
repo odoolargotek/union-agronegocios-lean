@@ -19,7 +19,15 @@
     .btn-blue   { background: #1f6feb; color:#fff; } .btn-blue:hover   { background:#388bfd; }
     .btn-red    { background: #da3633; color:#fff; } .btn-red:hover    { background:#f85149; }
     .btn-orange { background: #d29922; color:#fff; } .btn-orange:hover { background:#e3b341; }
+    .btn-purple { background: #6f42c1; color:#fff; } .btn-purple:hover { background:#8957e5; }
     .stage-controls { display:flex; gap:6px; flex-wrap:wrap; }
+    /* Tabs */
+    .tabs { display:flex; gap:6px; margin-bottom:16px; }
+    .tab { padding:7px 16px; border-radius:6px; border:1px solid #30363d; background:#161b22;
+           color:#aaa; cursor:pointer; font-size:0.82rem; font-weight:600; }
+    .tab.active { background:#1f6feb; color:#fff; border-color:#1f6feb; }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
     /* Global metrics */
     .global-metrics { background:#161b22; border-radius:10px; padding:16px; margin-bottom:20px;
                       display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; }
@@ -32,16 +40,13 @@
     .equipo-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
     .equipo-title { font-size:1rem; font-weight:700; color:#f0c040; }
     .online-count { font-size:0.72rem; background:#238636; color:#fff; border-radius:10px; padding:2px 8px; }
-    /* Métricas del equipo */
     .eq-metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:10px; }
     .eq-metric { background:#0d1117; border-radius:6px; padding:6px; text-align:center; }
     .eq-metric .val { font-size:1.1rem; font-weight:700; color:#58a6ff; }
     .eq-metric .lbl { font-size:0.6rem; color:#888; margin-top:1px; }
-    /* Pipeline de progreso por color */
     .pipeline { display:flex; gap:4px; margin-bottom:10px; align-items:center; }
     .pipe-step { flex:1; border-radius:5px; padding:4px 0; text-align:center; font-size:0.6rem; font-weight:700; }
     .pipe-arrow { color:#555; font-size:0.7rem; }
-    /* Mini tarjetas */
     .tarjetas-mini { display:flex; flex-wrap:wrap; gap:3px; margin-bottom:8px; }
     .tcard { width:34px; height:34px; border-radius:4px; border:1px solid #30363d;
              display:flex; flex-direction:column; gap:2px; padding:2px; position:relative; }
@@ -50,12 +55,47 @@
     .tcard.rechazada { border-color:#e94560; }
     .tcard-row { display:flex; gap:2px; flex:1; }
     .tcard-dot { flex:1; border-radius:2px; }
-    /* Jugadores */
     .jugadores-list { display:flex; flex-wrap:wrap; gap:5px; }
     .jugador-badge { font-size:0.68rem; background:#1f2937; border-radius:10px; padding:2px 7px; border-left:3px solid #888; }
     .defecto-btn { font-size:0.68rem; padding:3px 7px; border-radius:4px; border:1px solid #da3633;
                    background:transparent; color:#da3633; cursor:pointer; margin-top:6px; }
     .defecto-btn:hover { background:#da3633; color:#fff; }
+    /* ===== TIEMPOS ===== */
+    .tiempos-section { margin-top:0; }
+    .tiempos-equipo { background:#161b22; border-radius:10px; padding:16px;
+                      border:1px solid #30363d; margin-bottom:16px; }
+    .tiempos-equipo h3 { color:#f0c040; font-size:0.95rem; margin-bottom:12px; }
+    /* Resumen de tiempos promedio por operario */
+    .tiempos-resumen { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+                       gap:8px; margin-bottom:14px; }
+    .tr-card { background:#0d1117; border-radius:8px; padding:10px; text-align:center; }
+    .tr-card .color-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-bottom:4px; }
+    .tr-card .tr-name { font-size:0.68rem; color:#aaa; margin-bottom:6px; }
+    .tr-card .tr-ejec { font-size:1.1rem; font-weight:700; }
+    .tr-card .tr-espera { font-size:0.72rem; color:#f0c040; margin-top:2px; }
+    .tr-card .tr-lbl { font-size:0.58rem; color:#666; }
+    /* Tabla detalle tarjetas */
+    .tiempos-tabla-wrap { overflow-x:auto; }
+    table.tiempos-tabla { width:100%; border-collapse:collapse; font-size:0.72rem; }
+    table.tiempos-tabla th { background:#0d1117; color:#aaa; padding:5px 8px;
+                             text-align:center; border-bottom:1px solid #30363d; white-space:nowrap; }
+    table.tiempos-tabla td { padding:4px 8px; text-align:center; border-bottom:1px solid #21262d; }
+    table.tiempos-tabla tr:hover td { background:#1c2128; }
+    .t-fast { color:#28a745; font-weight:700; }
+    .t-mid  { color:#f0c040; }
+    .t-slow { color:#e94560; font-weight:700; }
+    .t-wait { color:#58a6ff; }
+    .t-na   { color:#444; }
+    /* Barra de espera vs ejecucion */
+    .t-bar { display:flex; height:6px; border-radius:3px; overflow:hidden; width:60px; margin:0 auto; }
+    .t-bar-ejec  { background:#28a745; }
+    .t-bar-wait  { background:#58a6ff; }
+    /* Lead time badge */
+    .lt-badge { display:inline-block; padding:2px 7px; border-radius:8px;
+                font-size:0.7rem; font-weight:700; }
+    .lt-fast { background:#28a74522; color:#28a745; }
+    .lt-mid  { background:#f0c04022; color:#f0c040; }
+    .lt-slow { background:#e9456022; color:#e94560; }
   </style>
 </head>
 <body>
@@ -83,7 +123,7 @@
       <label>Tarjetas/equipo</label>
       <div style="display:flex;gap:6px;align-items:center">
         <input type="number" id="inp-ntarjetas" value="40" min="5" max="60" style="width:65px">
-        <button class="btn-orange" onclick="iniciarEtapa()">▶ Iniciar</button>
+        <button class="btn-orange" onclick="iniciarEtapa()">&#9654; Iniciar</button>
       </div>
     </div>
     <div class="ctrl-group">
@@ -99,10 +139,25 @@
     <div class="gm"><div class="val" id="g-defectos">0</div><div class="lbl">Defectos</div></div>
     <div class="gm"><div class="val" id="g-score">—</div><div class="lbl">Score prom.</div></div>
     <div class="gm"><div class="val" id="g-jugadores">0</div><div class="lbl">Online</div></div>
+    <div class="gm"><div class="val" id="g-lt">—</div><div class="lbl">Lead Time prom.</div></div>
   </div>
 
-  <div class="equipos-grid" id="equipos-grid">
-    <p style="color:#888;font-size:0.9rem">Conecta una sesión para ver los equipos.</p>
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('tab-produccion', this)">🏭 Producción</div>
+    <div class="tab" onclick="showTab('tab-tiempos', this)">⏱ Tiempos</div>
+  </div>
+
+  <div id="tab-produccion" class="tab-content active">
+    <div class="equipos-grid" id="equipos-grid">
+      <p style="color:#888;font-size:0.9rem">Conecta una sesión para ver los equipos.</p>
+    </div>
+  </div>
+
+  <div id="tab-tiempos" class="tab-content">
+    <div class="tiempos-section" id="tiempos-section">
+      <p style="color:#888;font-size:0.9rem">Conecta una sesión para ver los tiempos.</p>
+    </div>
   </div>
 
   <script type="module">
@@ -121,7 +176,7 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    const COLORES = { amarillo:'#f5c518', naranja:'#e07800', rojo:'#e94560', verde:'#1a8a3a' };
+    const COLORES  = { amarillo:'#f5c518', naranja:'#e07800', rojo:'#e94560', verde:'#1a8a3a' };
     const POSICIONES = [
       {id:'a1',color:'amarillo',row:0},{id:'a2',color:'amarillo',row:0},
       {id:'n1',color:'naranja', row:0},{id:'r1',color:'rojo',    row:0},
@@ -133,14 +188,23 @@
     const LOTE = {1:4,2:2,3:1};
 
     let sesion='', etapaActual=1;
+    let globalData = {};
+
+    window.showTab = function(id, el) {
+      document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      el.classList.add('active');
+    };
 
     window.conectar = function() {
       sesion = document.getElementById('inp-sesion').value.trim().toUpperCase();
       if (!sesion) { alert('Ingresa código de sesión.'); return; }
       onValue(ref(db,`sesiones/${sesion}`), snap => {
-        const data = snap.val()||{};
-        etapaActual = data.etapaActiva||1;
-        renderAll(data);
+        globalData = snap.val()||{};
+        etapaActual = globalData.etapaActiva||1;
+        renderAll(globalData);
+        renderTiempos(globalData);
       });
     };
 
@@ -154,20 +218,19 @@
       if (!sesion) { alert('Conecta primero.'); return; }
       const n = parseInt(document.getElementById('inp-ntarjetas').value)||40;
       const lote = LOTE[etapaActual];
-      // Paso 1: limpiar
       const removes = [];
       for (let eq=1;eq<=6;eq++) {
-        removes.push(remove(ref(db,`sesiones/${sesion}/equipos/${eq}/etapas/${etapaActual}/tarjetas`)));
+        removes.push(remove(ref(db,`sesiones/${sesion}/equipos/${eq}/etapas/${etapaActual}`)));
         removes.push(set(ref(db,`sesiones/${sesion}/equipos/${eq}/metricas`),{entregadas:0,wip:0,defectos:0}));
       }
       await Promise.all(removes);
-      // Paso 2: crear tarjetas
       const updates={};
+      const tsInicio = Date.now();
       for (let eq=1;eq<=6;eq++) {
         for (let i=1;i<=n;i++) {
           const id=`t${String(i).padStart(3,'0')}`;
           updates[`sesiones/${sesion}/equipos/${eq}/etapas/${etapaActual}/tarjetas/${id}`]={
-            numero:i, completada:false, lote:Math.ceil(i/lote)
+            numero:i, completada:false, lote:Math.ceil(i/lote), tsCreada:tsInicio
           };
         }
       }
@@ -180,6 +243,7 @@
       if (!confirm('¿Resetear toda la sesión?')) return;
       await remove(ref(db,`sesiones/${sesion}`));
       document.getElementById('equipos-grid').innerHTML='<p style="color:#888">Sesión reseteada.</p>';
+      document.getElementById('tiempos-section').innerHTML='<p style="color:#888">Sesión reseteada.</p>';
     };
 
     window.registrarDefecto = async function(eq) {
@@ -188,16 +252,169 @@
       await set(mRef,(snap.val()||0)+1);
     };
 
+    // ───────────────────────────────────────────────
+    // CALCULOS DE TIEMPO
+    // ───────────────────────────────────────────────
+    function fmt(ms) {
+      if (ms === null || ms === undefined) return '—';
+      const s = Math.round(ms/1000);
+      if (s < 60) return s+'s';
+      return Math.floor(s/60)+'m '+String(s%60).padStart(2,'0')+'s';
+    }
+
+    function tClass(ms) {
+      if (!ms) return 't-na';
+      if (ms < 15000)  return 't-fast';
+      if (ms < 45000)  return 't-mid';
+      return 't-slow';
+    }
+
+    // Para cada tarjeta calcula tiempos por operario
+    function calcTiemposTarjeta(t) {
+      const resultado = {};
+      ORDEN.forEach((color, idx) => {
+        const misPosiciones = POSICIONES.filter(p=>p.color===color);
+        // Timestamps de etiquetas pegadas por este color
+        const tsPegadas = misPosiciones.map(p => t[p.id]?.ts).filter(Boolean);
+        const tsPrimera = tsPegadas.length ? Math.min(...tsPegadas) : null;
+
+        const tsEntrego = t[`entregado_${color}`] || null;
+        // Ejecucion = desde que pego la primera etiqueta hasta que entrego
+        const ejec = (tsPrimera && tsEntrego) ? tsEntrego - tsPrimera : null;
+
+        // Espera = desde que el anterior entrego hasta que este pego su primera etiqueta
+        let espera = null;
+        if (idx > 0) {
+          const tsAnterior = t[`entregado_${ORDEN[idx-1]}`] || null;
+          if (tsAnterior && tsPrimera) espera = tsPrimera - tsAnterior;
+        } else {
+          // Amarillo: espera desde tsCreada hasta primera etiqueta
+          if (t.tsCreada && tsPrimera) espera = tsPrimera - t.tsCreada;
+        }
+
+        resultado[color] = { ejec, espera, tsPrimera, tsEntrego };
+      });
+
+      // Lead time: desde primera etiqueta amarillo hasta entregado_verde
+      const tsInicioAma = resultado.amarillo.tsPrimera;
+      const tsFinVerde  = resultado.verde.tsEntrego;
+      resultado.leadTime = (tsInicioAma && tsFinVerde) ? tsFinVerde - tsInicioAma : null;
+
+      return resultado;
+    }
+
+    // ───────────────────────────────────────────────
+    // RENDER TIEMPOS
+    // ───────────────────────────────────────────────
+    function renderTiempos(data) {
+      const equipos = data.equipos||{};
+      const etapa   = data.etapaActiva||1;
+      let html = '';
+      let allLeadTimes = [];
+
+      for (let eq=1;eq<=6;eq++) {
+        const tarjetas = ((equipos[eq]||{}).etapas||{})[etapa]?.tarjetas||{};
+        const ids = Object.keys(tarjetas);
+        if (!ids.length) continue;
+
+        // Calcular tiempos por tarjeta
+        const filas = ids
+          .sort((a,b)=>(tarjetas[a].numero||0)-(tarjetas[b].numero||0))
+          .map(id => ({ id, t: tarjetas[id], tt: calcTiemposTarjeta(tarjetas[id]) }))
+          .filter(x => x.tt.leadTime || ORDEN.some(c => x.tt[c].ejec)); // solo tarjetas con algo calculable
+
+        if (!filas.length) continue;
+
+        // Promedios por operario
+        const promedios = {};
+        ORDEN.forEach(color => {
+          const ejecArr   = filas.map(f=>f.tt[color].ejec).filter(Boolean);
+          const esperaArr = filas.map(f=>f.tt[color].espera).filter(Boolean);
+          promedios[color] = {
+            ejec:   ejecArr.length   ? Math.round(ejecArr.reduce((a,b)=>a+b,0)/ejecArr.length)   : null,
+            espera: esperaArr.length ? Math.round(esperaArr.reduce((a,b)=>a+b,0)/esperaArr.length) : null
+          };
+        });
+
+        const ltArr = filas.map(f=>f.tt.leadTime).filter(Boolean);
+        const ltProm = ltArr.length ? Math.round(ltArr.reduce((a,b)=>a+b,0)/ltArr.length) : null;
+        if (ltProm) allLeadTimes.push(ltProm);
+
+        // Cards resumen por operario
+        const resumenHtml = ORDEN.map(color => `
+          <div class="tr-card">
+            <div><span class="color-dot" style="background:${COLORES[color]}"></span></div>
+            <div class="tr-name">${color.charAt(0).toUpperCase()+color.slice(1)}</div>
+            <div class="tr-ejec ${tClass(promedios[color].ejec)}">⚡ ${fmt(promedios[color].ejec)}</div>
+            <div class="tr-lbl">ejec. prom.</div>
+            <div class="tr-espera">⏳ ${fmt(promedios[color].espera)}</div>
+            <div class="tr-lbl">espera prom.</div>
+          </div>`).join('');
+
+        // Tabla detalle
+        const theadCols = ORDEN.map(c =>
+          `<th style="color:${COLORES[c]}">${c.charAt(0).toUpperCase()+c.slice(1)}<br>
+           <span style="font-weight:400;font-size:0.62rem">ejec / espera</span></th>`
+        ).join('');
+
+        const tbodyRows = filas.map(({t, tt}) => {
+          const ltMs = tt.leadTime;
+          const ltCls = !ltMs ? '' : ltMs<30000 ? 'lt-fast' : ltMs<90000 ? 'lt-mid' : 'lt-slow';
+          const cols = ORDEN.map(color => {
+            const e  = tt[color].ejec;
+            const es = tt[color].espera;
+            const totalMs = (e||0)+(es||0);
+            const ejecPct  = totalMs ? Math.round((e||0)/totalMs*100) : 50;
+            const waitPct  = 100-ejecPct;
+            return `<td>
+              <div>${e  ? `<span class="${tClass(e)}">${fmt(e)}</span>` : '<span class="t-na">—</span>'}</div>
+              <div class="t-wait" style="font-size:0.62rem">${es ? fmt(es) : ''}</div>
+              ${e||es ? `<div class="t-bar" title="Verde=ejec / Azul=espera">
+                <div class="t-bar-ejec" style="width:${ejecPct}%"></div>
+                <div class="t-bar-wait" style="width:${waitPct}%"></div>
+              </div>` : ''}
+            </td>`;
+          }).join('');
+          return `<tr>
+            <td style="font-weight:700;color:#aaa">#${t.numero}</td>
+            ${cols}
+            <td>${ltMs ? `<span class="lt-badge ${ltCls}">${fmt(ltMs)}</span>` : '<span class="t-na">—</span>'}</td>
+          </tr>`;
+        }).join('');
+
+        html += `<div class="tiempos-equipo">
+          <h3>Equipo ${eq} — ${filas.length} tarjetas con datos${ltProm?` — Lead Time prom: <span style="color:#28a745">${fmt(ltProm)}</span>`:''}</h3>
+          <div class="tiempos-resumen">${resumenHtml}</div>
+          <div class="tiempos-tabla-wrap">
+            <table class="tiempos-tabla">
+              <thead><tr><th>#</th>${theadCols}<th>🏁 Lead Time</th></tr></thead>
+              <tbody>${tbodyRows}</tbody>
+            </table>
+          </div>
+        </div>`;
+      }
+
+      if (!html) html = '<p style="color:#888;font-size:0.9rem">Aún no hay datos de tiempo. Los tiempos aparecen cuando los operarios pegan etiquetas y entregan.</p>';
+
+      document.getElementById('tiempos-section').innerHTML = html;
+
+      // Lead time global
+      if (allLeadTimes.length) {
+        const ltGlobal = Math.round(allLeadTimes.reduce((a,b)=>a+b,0)/allLeadTimes.length);
+        document.getElementById('g-lt').textContent = fmt(ltGlobal);
+      }
+    }
+
+    // ───────────────────────────────────────────────
+    // RENDER PRODUCCION (igual que antes)
+    // ───────────────────────────────────────────────
     function calcWIP(tarjetas) {
-      // WIP real = tarjetas que tienen al menos 1 etiqueta pegada pero no están aprobadas
       return Object.values(tarjetas).filter(t => {
-        const algunaPegada = POSICIONES.some(p => t[p.id] !== undefined);
-        return algunaPegada && !t.aprobada;
+        return POSICIONES.some(p => t[p.id] !== undefined) && !t.aprobada;
       }).length;
     }
 
     function calcProgresoPipeline(tarjetas) {
-      // Por cada color, cuántas tarjetas tienen todas sus etiquetas de ese color
       const result = {};
       ORDEN.forEach(color => {
         const misPosiciones = POSICIONES.filter(p=>p.color===color);
@@ -222,14 +439,11 @@
         const metricas  = eqData.metricas||{};
         const tarjetas  = ((eqData.etapas||{})[etapa]||{}).tarjetas||{};
         const nJug      = Object.keys(jugadores).length;
-
-        // WIP calculado en tiempo real desde los datos
         const wipReal   = calcWIP(tarjetas);
         const entregadas= metricas.entregadas||0;
         const defectos  = metricas.defectos||0;
         const pipeline  = calcProgresoPipeline(tarjetas);
 
-        // Score promedio del equipo
         const allScores = Object.values(tarjetas).flatMap(t =>
           POSICIONES.map(p => t[p.id]?.score).filter(s=>s!==undefined)
         );
@@ -238,12 +452,10 @@
 
         totEnt+=entregadas; totWip+=wipReal; totDef+=defectos; totJug+=nJug;
 
-        // Mini tarjetas visuales
         let tarjetasHtml = '';
         Object.values(tarjetas).slice(0,40).forEach(t => {
           const cls = t.aprobada?'aprobada':t.rechazada?'rechazada':
                       POSICIONES.every(p=>t[p.id]!==undefined)?'en-revision':'';
-          // 2 filas de dots
           const fila0 = POSICIONES.filter(p=>p.row===0).map(p=>
             `<div class="tcard-dot" style="background:${t[p.id]?COLORES[p.color]:'#21262d'}"></div>`).join('');
           const fila1 = POSICIONES.filter(p=>p.row===1).map(p=>
@@ -251,7 +463,6 @@
           tarjetasHtml+=`<div class="tcard ${cls}"><div class="tcard-row">${fila0}</div><div class="tcard-row">${fila1}</div></div>`;
         });
 
-        // Pipeline visual
         const pipeHtml = ORDEN.map(color =>
           `<div class="pipe-step" style="background:${COLORES[color]}22;color:${COLORES[color]};border:1px solid ${COLORES[color]}44">
             ${color.substring(0,3).toUpperCase()}<br>${pipeline[color]||0}
@@ -259,7 +470,6 @@
         ).join('<span class="pipe-arrow">›</span>') +
         `<span class="pipe-arrow">›</span><div class="pipe-step" style="background:#28a74522;color:#28a745;border:1px solid #28a74544">OK<br>${pipeline.aprobadas||0}</div>`;
 
-        // Jugadores
         const jugHtml = Object.values(jugadores).map(j=>
           `<span class="jugador-badge" style="border-left-color:${COLORES[j.rol]||'#888'}">${j.nombre||j.rol}</span>`
         ).join('');
