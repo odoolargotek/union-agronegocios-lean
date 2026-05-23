@@ -32,17 +32,20 @@
     .lote-info b { color: #f0c040; }
     #status-msg { font-size: 0.85rem; color: #f0c040; text-align: center; min-height: 18px; margin: 6px 0; }
     #waiting-msg { text-align: center; color: #aaa; padding: 30px 10px; font-size: 0.9rem; line-height: 1.6; }
-    .lote-progress { display: flex; gap: 4px; margin-bottom: 12px; }
-    .lp-dot { flex: 1; height: 6px; border-radius: 3px; background: #0f3460; }
-    .lp-dot.done { background: #28a745; }
-    .lp-dot.pending { background: #f0c040; }
+    /* Botón entregar - siempre arriba */
+    .btn-entregar { width: 100%; padding: 14px; border-radius: 10px; border: none;
+                    background: linear-gradient(135deg,#1a8a3a,#0d6e2e); color: #fff;
+                    font-size: 1.05rem; font-weight: 700; cursor: pointer; margin-bottom: 12px;
+                    box-shadow: 0 3px 14px rgba(26,138,58,0.45); letter-spacing: 0.5px;
+                    transition: transform 0.1s; }
+    .btn-entregar:active { transform: scale(0.97); }
     /* Paper card */
     .paper-card { background: #fffef0; border-radius: 8px;
                   box-shadow: 2px 3px 12px rgba(0,0,0,0.5); padding: 12px 12px 8px;
                   margin-bottom: 12px; color: #222; user-select: none; }
     .card-header { display: flex; justify-content: space-between; align-items: center;
                    border-bottom: 1px solid #ccc; padding-bottom: 6px; margin-bottom: 8px; }
-    .card-num { font-size: 0.75rem; font-weight: 700; color: #444; }
+    .card-num  { font-size: 0.75rem; font-weight: 700; color: #444; }
     .card-logo { font-size: 0.62rem; color: #999; font-style: italic; }
     .card-estado { font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: #eee; color: #666; }
     .card-estado.aprobada  { background: #d4edda; color: #155724; }
@@ -55,7 +58,7 @@
                  background: #f5f5f0; display: flex; align-items: center; justify-content: center;
                  font-size: 0.58rem; color: #bbb; position: relative;
                  transition: border 0.2s, background 0.2s; flex-shrink: 0; }
-    .drop-zone.mia { cursor: pointer; }
+    .drop-zone.mia  { cursor: pointer; }
     .drop-zone.over { border-color: #e94560; background: #fff0f3; }
     .drop-zone.filled { border-style: solid; border-color: transparent; background: transparent; }
     .etiqueta-pegada { width: 100%; height: 100%; border-radius: 4px; display: flex;
@@ -68,20 +71,12 @@
     .score-badge.bad      { background: #e94560; }
     /* Draggable */
     .drag-area { margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 8px; }
-    .da-label { font-size: 0.68rem; color: #888; margin-bottom: 5px; text-align: center; }
+    .da-label  { font-size: 0.68rem; color: #888; margin-bottom: 5px; text-align: center; }
     .draggable-etiqueta { width: 64px; height: 34px; border-radius: 6px; display: flex;
                           align-items: center; justify-content: center; font-size: 0.65rem;
                           font-weight: 700; color: #fff; cursor: grab; margin: 0 auto;
                           box-shadow: 0 2px 8px rgba(0,0,0,0.3); touch-action: none;
                           text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
-    /* Botón entregar */
-    .btn-entregar { width: 100%; padding: 14px; border-radius: 10px; border: none;
-                    background: linear-gradient(135deg,#1a8a3a,#0d6e2e); color: #fff;
-                    font-size: 1.05rem; font-weight: 700; cursor: pointer; margin-top: 8px;
-                    box-shadow: 0 3px 14px rgba(26,138,58,0.45); letter-spacing: 0.5px;
-                    transition: transform 0.1s; }
-    .btn-entregar:active { transform: scale(0.97); }
-    .btn-entregar:disabled { background: #444; box-shadow: none; cursor: not-allowed; }
     /* Calidad */
     .calidad-panel { background: #fffef0; border-radius: 8px; padding: 12px;
                      margin-bottom: 10px; color: #222; border: 2px solid #f0c040; }
@@ -135,7 +130,6 @@
       <span style="margin-left:auto;font-size:0.72rem;color:#888" id="equipo-display"></span>
     </div>
     <div class="lote-info" id="lote-info">Cargando...</div>
-    <div class="lote-progress" id="lote-progress"></div>
     <div class="metrics-row">
       <div class="metric"><div class="val" id="m-entregadas">0</div><div class="lbl">Entregadas</div></div>
       <div class="metric"><div class="val" id="m-wip">0</div><div class="lbl">WIP</div></div>
@@ -175,9 +169,9 @@
     const ORDEN_TURNOS = ['amarillo','naranja','rojo','verde'];
 
     const LOTE_CONFIG = {
-      1: { lote:4, nombre:'Etapa 1 — Lote de 4', desc:'Pega tus etiquetas en <b>4 tarjetas</b> y presiona Entregar.' },
-      2: { lote:2, nombre:'Etapa 2 — Lote de 2', desc:'Pega tus etiquetas en <b>2 tarjetas</b> y presiona Entregar.' },
-      3: { lote:1, nombre:'Etapa 3 — Flujo unitario', desc:'Pega tu etiqueta en <b>1 tarjeta</b> y pasa inmediatamente.' }
+      1: { nombre:'Etapa 1 — Libre', desc:'Pega tus etiquetas y presiona <b>Entregar</b> cuando quieras.' },
+      2: { nombre:'Etapa 2 — Lote de 2', desc:'Trabaja de <b>2 en 2</b> y entrega cuando completes el par.' },
+      3: { nombre:'Etapa 3 — Flujo unitario', desc:'Entrega <b>tarjeta por tarjeta</b> de inmediato.' }
     };
 
     const UMBRAL_OK = 18, UMBRAL_MARGINAL = 35;
@@ -187,7 +181,7 @@
     let tarjetasListener = null;
     let tarjetasData = {};
 
-    // ── LOGIN ─────────────────────────────────────────────────────
+    // ── LOGIN ─────────────────────────────────────────────────
     window.entrar = function() {
       sesion = document.getElementById('inp-sesion').value.trim().toUpperCase();
       equipo = document.getElementById('inp-equipo').value;
@@ -230,72 +224,52 @@
       );
     }
 
-    // ── TURNO: ¿puede este operario ver/pegar en esta tarjeta? ────
-    // El anterior debió haber entregado (o es el primero = amarillo)
+    // El anterior entregó = yo puedo pegar (o soy amarillo, primero)
     function anteriorEntrego(t, miRol) {
       const idx = ORDEN_TURNOS.indexOf(miRol);
-      if (idx <= 0) return true; // amarillo siempre puede
-      const anterior = ORDEN_TURNOS[idx - 1];
-      return !!t[`entregado_${anterior}`];
+      if (idx <= 0) return true;
+      return !!t[`entregado_${ORDEN_TURNOS[idx-1]}`];
     }
 
-    // ── RENDER PRINCIPAL ─────────────────────────────────────────
+    // ── RENDER PRINCIPAL ────────────────────────────────────────
     function render() {
       const container = document.getElementById('tarjetas-container');
       const ids = Object.keys(tarjetasData);
 
       if (!ids.length) {
         container.innerHTML = '<div id="waiting-msg">⏳ Esperando que el instructor inicie la etapa...</div>';
-        document.getElementById('lote-progress').innerHTML = '';
         return;
       }
 
       if (rol === 'calidad')      { renderCalidad(container, ids); return; }
       if (rol === 'materialista') { renderMaterialista(container, ids); return; }
 
-      const lote = LOTE_CONFIG[etapaActual]?.lote || 4;
-
-      // Lote actual = las primeras N tarjetas que YO no he entregado aún
-      // (independiente de si pegué o no — el jugador decide cuándo entregar)
-      const miPendientes = ids
+      // Tarjetas que yo todavía no entregue, ordenadas por número
+      const misPendientes = ids
         .filter(id => !tarjetasData[id][`entregado_${rol}`])
         .sort((a,b) => (tarjetasData[a].numero||0) - (tarjetasData[b].numero||0));
 
-      const loteActual = miPendientes.slice(0, lote);
-
-      // ¿Pegué mis etiquetas en TODAS las del lote?
-      const misPosiciones = POSICIONES.filter(p => p.color === rol);
-      const loteCompleto = loteActual.length > 0 &&
-        loteActual.every(id => misPosiciones.every(p => tarjetasData[id][p.id] !== undefined));
-
-      // Progress bar
-      const pegadasCount = loteActual.filter(id =>
-        misPosiciones.every(p => tarjetasData[id][p.id] !== undefined)
-      ).length;
-      document.getElementById('lote-progress').innerHTML =
-        Array.from({length: lote}, (_, i) =>
-          `<div class="lp-dot ${i < pegadasCount ? 'done' : i === pegadasCount ? 'pending' : ''}"></div>`
-        ).join('');
-
-      if (!loteActual.length) {
-        container.innerHTML = '<div id="waiting-msg">🎉 ¡Terminaste todas las tarjetas de esta etapa!</div>';
+      if (!misPendientes.length) {
+        container.innerHTML = '<div id="waiting-msg">🎉 ¡Terminaste todas las tarjetas!</div>';
         return;
       }
 
-      // Mostrar solo tarjetas donde el anterior ya entregó (o soy amarillo)
-      // Las que el anterior aún no entregó se muestran bloqueadas
-      let html = loteActual.map(id => {
-        const t = tarjetasData[id];
-        const puedo = anteriorEntrego(t, rol);
-        return renderTarjeta(id, t, puedo);
-      }).join('');
+      // Cuantas tienen al menos 1 etiqueta mía
+      const misPosiciones = POSICIONES.filter(p => p.color === rol);
+      const conEtiqueta   = misPendientes.filter(id =>
+        misPosiciones.some(p => tarjetasData[id][p.id] !== undefined)
+      ).length;
 
-      // Botón Entregar: aparece si completé mis etiquetas en el lote
-      if (loteCompleto) {
-        html += `<button class="btn-entregar" onclick="entregarLote()">
-          📦 ENTREGAR LOTE (${loteActual.length} tarjeta${loteActual.length>1?'s':''})
-        </button>`;
-      }
+      // Botón ENTREGAR arriba — siempre visible
+      let html = `<button class="btn-entregar" onclick="entregarLote()">
+        📦 ENTREGAR (${misPendientes.length} pendiente${misPendientes.length>1?'s':''}${conEtiqueta?' • '+conEtiqueta+' con etiqueta':''})
+      </button>`;
+
+      // Tarjetas
+      html += misPendientes.map(id => {
+        const t = tarjetasData[id];
+        return renderTarjeta(id, t, anteriorEntrego(t, rol));
+      }).join('');
 
       container.innerHTML = html;
       setupDropZones();
@@ -304,18 +278,17 @@
     function renderTarjeta(id, t, puedo) {
       const misPosiciones = POSICIONES.filter(p => p.color === rol);
       const todasLlenas   = POSICIONES.every(p => t[p.id] !== undefined);
-      const yaEntregue    = !!t[`entregado_${rol}`];
 
-      const estadoLabel = t.aprobada ? 'aprobada' : t.rechazada ? 'rechazada' :
-                          yaEntregue ? 'entregada' : todasLlenas ? 'revision' : '';
-      const estadoTxt   = t.aprobada ? '✅ Aprobada' : t.rechazada ? '❌ Defecto' :
-                          yaEntregue ? '📦 Entregada' : todasLlenas ? '🔍 En revisión' : '';
+      const estadoLabel = t.aprobada   ? 'aprobada'  : t.rechazada ? 'rechazada' :
+                          todasLlenas  ? 'revision'  : '';
+      const estadoTxt   = t.aprobada   ? '✅ Aprobada' : t.rechazada ? '❌ Defecto'  :
+                          todasLlenas  ? '🔍 En revisión' : '';
 
       const filas = [0,1].map(row => {
         const zonas = POSICIONES.filter(p=>p.row===row).map(pos => {
           const pegada = t[pos.id];
           if (pegada !== undefined) {
-            const s = pegada.score||0;
+            const s  = pegada.score||0;
             const sc = s>=85?'perfect':s>=60?'ok':'bad';
             return `<div class="drop-zone filled">
               <div class="etiqueta-pegada" style="background:${COLORES[pos.color]}">
@@ -323,7 +296,7 @@
                 <span class="score-badge ${sc}">${s}%</span>
               </div></div>`;
           }
-          const esMio = pos.color === rol && puedo && !yaEntregue;
+          const esMio = pos.color === rol && puedo;
           return `<div class="drop-zone${esMio?' mia':''}" data-pos="${pos.id}" data-tid="${id}"
             style="${esMio?'border-color:'+COLORES[rol]+';':''}"
             >${esMio?'<span style="color:'+COLORES[rol]+';font-size:0.55rem">drop</span>':''}</div>`;
@@ -331,12 +304,10 @@
         return `<div class="etiqueta-fila">${zonas}</div>`;
       }).join('');
 
-      const meFalta   = misPosiciones.some(p => t[p.id] === undefined);
-      const mostrarDrag = meFalta && puedo && !yaEntregue;
-      const bloqMsg   = !puedo ? `<div style="font-size:0.72rem;color:#888;text-align:center;padding:6px 0">
+      const meFalta    = misPosiciones.some(p => t[p.id] === undefined);
+      const bloqMsg    = !puedo ? `<div style="font-size:0.72rem;color:#888;text-align:center;padding:6px 0">
         ⏳ Esperando que ${ORDEN_TURNOS[ORDEN_TURNOS.indexOf(rol)-1]} entregue...</div>` : '';
-
-      const dragHtml = mostrarDrag ? `
+      const dragHtml   = meFalta && puedo ? `
         <div class="drag-area">
           <div class="da-label">Arrastra tu etiqueta ↓</div>
           <div class="draggable-etiqueta" style="background:${COLORES[rol]}"
@@ -354,37 +325,28 @@
         </div>${filas}${dragHtml}</div>`;
     }
 
-    // ── ENTREGAR LOTE ─────────────────────────────────────────────
+    // ── ENTREGAR — marca TODAS las pendientes como entregadas ───────
     window.entregarLote = async function() {
-      const lote = LOTE_CONFIG[etapaActual]?.lote || 4;
-      const misPosiciones = POSICIONES.filter(p => p.color === rol);
       const ids = Object.keys(tarjetasData);
-
-      // Tarjetas del lote: completadas por mí, aún no entregadas
       const aEntregar = ids
-        .filter(id => {
-          const t = tarjetasData[id];
-          return misPosiciones.every(p => t[p.id] !== undefined) && !t[`entregado_${rol}`];
-        })
-        .sort((a,b) => (tarjetasData[a].numero||0) - (tarjetasData[b].numero||0))
-        .slice(0, lote);
+        .filter(id => !tarjetasData[id][`entregado_${rol}`])
+        .sort((a,b) => (tarjetasData[a].numero||0) - (tarjetasData[b].numero||0));
 
       if (!aEntregar.length) return;
 
+      const ts = Date.now();
       const updates = {};
       aEntregar.forEach(id => {
-        updates[`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${id}/entregado_${rol}`] = Date.now();
+        updates[`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${id}/entregado_${rol}`] = ts;
       });
-      // Incrementar WIP (tarjetas en movimiento)
       const snap = await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/wip`));
       updates[`sesiones/${sesion}/equipos/${equipo}/metricas/wip`] = (snap.val()||0) + aEntregar.length;
       await update(ref(db), updates);
-      setStatus(`📦 Lote de ${aEntregar.length} tarjeta${aEntregar.length>1?'s':''} entregado ✅`);
+      setStatus(`📦 ${aEntregar.length} tarjeta${aEntregar.length>1?'s':''} entregada${aEntregar.length>1?'s':''} ✅`);
     };
 
-    // ── CALIDAD ───────────────────────────────────────────────────
+    // ── CALIDAD ─────────────────────────────────────────────────
     function renderCalidad(container, ids) {
-      // Ve tarjetas donde verde ya entregó
       const enRevision = ids.filter(id => {
         const t = tarjetasData[id];
         return t.entregado_verde && !t.aprobada && !t.rechazada;
@@ -394,7 +356,7 @@
         return;
       }
       const items = enRevision.map(id => {
-        const t = tarjetasData[id];
+        const t   = tarjetasData[id];
         const allS = POSICIONES.map(p => t[p.id]?.score||0);
         const avg  = Math.round(allS.reduce((a,b)=>a+b,0)/allS.length);
         const cls  = avg>=85?'#28a745':avg>=60?'#d29922':'#e94560';
@@ -413,7 +375,7 @@
     window.decidirCalidad = async function(tarjetaId, aprobada, score) {
       const path = `sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${tarjetaId}`;
       const updates = { [`${path}/aprobada`]:aprobada, [`${path}/rechazada`]:!aprobada, [`${path}/scorePromedio`]:score };
-      const key = aprobada ? 'entregadas' : 'defectos';
+      const key  = aprobada ? 'entregadas' : 'defectos';
       const snap = await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/${key}`));
       updates[`sesiones/${sesion}/equipos/${equipo}/metricas/${key}`] = (snap.val()||0)+1;
       if (aprobada) {
@@ -424,7 +386,7 @@
       setStatus(aprobada ? '✅ Tarjeta aprobada' : '❌ Defecto registrado');
     };
 
-    // ── MATERIALISTA ──────────────────────────────────────────────
+    // ── MATERIALISTA ────────────────────────────────────────────
     function renderMaterialista(container, ids) {
       const listos = ids.filter(id => {
         const t = tarjetasData[id];
@@ -438,7 +400,7 @@
         : '<div id="waiting-msg">📦 Sin lotes listos para mover aún...</div>';
     }
 
-    // ── DRAG MOUSE ────────────────────────────────────────────────
+    // ── DRAG MOUSE ──────────────────────────────────────────────
     let dragTid = null;
     function setupDropZones() {
       document.querySelectorAll('.draggable-etiqueta').forEach(el => {
@@ -457,7 +419,7 @@
       });
     }
 
-    // ── DRAG TOUCH ────────────────────────────────────────────────
+    // ── DRAG TOUCH ──────────────────────────────────────────────
     const ghost = document.getElementById('drag-ghost');
     window.touchStart = function(e) {
       dragTid = e.currentTarget.dataset.tid;
@@ -480,7 +442,7 @@
       if (zone) pegarEtiqueta(zone.dataset.tid, zone.dataset.pos, t.clientX, t.clientY, zone);
     };
 
-    // ── PEGAR + SCORE ─────────────────────────────────────────────
+    // ── PEGAR + SCORE ───────────────────────────────────────────
     async function pegarEtiqueta(tarjetaId, posId, dropX, dropY, zoneEl) {
       const rect = zoneEl.getBoundingClientRect();
       const dist = Math.sqrt((dropX-rect.left-rect.width/2)**2+(dropY-rect.top-rect.height/2)**2);
