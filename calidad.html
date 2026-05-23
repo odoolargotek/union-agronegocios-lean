@@ -170,9 +170,9 @@
       const enCola = ids.filter(id => {
         const t = tarjetasData[id];
         if (t.aprobada || t.rechazada) return false;
-        // Nuevo flujo: el materialista escribe entrada_calidad
-        // Flujo legacy (etapa anterior): entregado_materialista_calidad o entregado_verde
-        return !!t.entrada_calidad || !!t.entregado_materialista_calidad || !!t.entregado_verde;
+        // Solo entra si el MATERIALISTA la movió a calidad (campo entrada_calidad)
+        // Soporte legacy por si hubo sesiones con nombre anterior
+        return !!t.entrada_calidad || !!t.entregado_materialista_calidad;
       }).sort((a,b)=>(tarjetasData[a].numero||0)-(tarjetasData[b].numero||0));
 
       document.getElementById('m-pendientes').textContent = enCola.length;
