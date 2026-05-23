@@ -26,7 +26,16 @@
     .equipo-chip { background:#161b22; border-radius:20px; padding:3px 12px; font-size:0.78rem; color:#aaa; }
     #status-msg { font-size:0.85rem; color:#17a2b8; text-align:center; min-height:18px; margin:4px 0 10px; }
 
-    /* ── Bloques de color ── */
+    /* Bloqueo etapa 2/3 */
+    #bloqueado-msg { display:none; background:#161b22; border:2px solid #e94560; border-radius:14px;
+                     padding:28px 20px; text-align:center; max-width:380px; margin-top:20px; }
+    #bloqueado-msg .ico { font-size:2.8rem; margin-bottom:12px; }
+    #bloqueado-msg h2 { font-size:1rem; color:#e94560; margin-bottom:8px; }
+    #bloqueado-msg p  { font-size:0.82rem; color:#aaa; line-height:1.6; }
+    #bloqueado-msg .etapa-chip { display:inline-block; background:#e9456022; border:1px solid #e94560;
+                                  border-radius:20px; padding:3px 14px; font-size:0.75rem;
+                                  color:#e94560; margin-top:12px; }
+
     .color-block { background:#161b22; border-radius:12px; padding:14px; margin-bottom:14px;
                    border:2px solid #30363d; }
     .color-block-header { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
@@ -45,12 +54,8 @@
     .bandeja-count { font-size:0.62rem; background:#21262d; border-radius:8px; padding:1px 6px; color:#888; }
     .cajas-wrap { display:flex; flex-wrap:wrap; gap:6px; min-height:44px; align-items:flex-start; }
     .caja-vacia { color:#333; font-size:0.68rem; align-self:center; }
-
-    /* Flecha central */
     .arrow-col { display:flex; align-items:center; justify-content:center; padding-top:28px; }
     .arrow-col span { font-size:1.4rem; color:#555; }
-
-    /* Caja draggable */
     .caja { width:58px; height:58px; border-radius:8px; display:flex; flex-direction:column;
             align-items:center; justify-content:center; cursor:grab; touch-action:none;
             box-shadow:0 2px 8px rgba(0,0,0,0.5); border:2px solid rgba(255,255,255,0.12);
@@ -60,8 +65,6 @@
     .caja-num  { font-size:0.55rem; font-weight:700; color:#fff; margin-top:2px;
                  text-shadow:0 1px 3px rgba(0,0,0,0.6); }
     .caja-ids  { font-size:0.45rem; color:rgba(255,255,255,0.55); text-align:center; }
-
-    /* Ghost touch */
     #drag-ghost { position:fixed; pointer-events:none; z-index:9999; width:58px; height:58px;
                   border-radius:8px; display:none; align-items:center; justify-content:center;
                   flex-direction:column; font-size:1.2rem; opacity:0.85;
@@ -93,6 +96,16 @@
     <button class="primary" onclick="entrar()">Entrar como Materialista</button>
   </div>
 
+  <!-- Mensaje de bloqueo para etapas 2 y 3 -->
+  <div id="bloqueado-msg">
+    <div class="ico">🚫</div>
+    <h2>Rol eliminado en esta etapa</h2>
+    <p>En las etapas 2 y 3 el flujo es <b>directo entre operarios</b>.<br>
+       El Materialista fue eliminado como mejora Lean.<br><br>
+       <b>Eliminación del transporte</b> = menos desperdicio, menor lead time.</p>
+    <div class="etapa-chip" id="etapa-chip-blq">Etapa activa: —</div>
+  </div>
+
   <div id="game-area">
     <div class="hud">
       <div class="stage-badge" id="stage-badge">Etapa 1</div>
@@ -121,8 +134,6 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    // Flujo: Amarillo → Naranja → Rojo → Verde → Calidad
-    // El materialista mueve de salida_{color} a entrada_{siguiente}
     const FLUJO = [
       { color:'amarillo', label:'Amarillo', hex:'#f5c518',
         campoSalida:'salida_amarillo', campoEntradaSig:'entrada_naranja', siguiente:'naranja' },
@@ -143,15 +154,22 @@
       nombre = document.getElementById('inp-nombre').value.trim() || 'Materialista';
       if (!sesion||!equipo) { alert('Completa todos los campos.'); return; }
       document.getElementById('login-area').style.display = 'none';
-      document.getElementById('game-area').style.display  = 'block';
       document.getElementById('equipo-chip').textContent  = 'Equipo ' + equipo;
       set(ref(db,`sesiones/${sesion}/equipos/${equipo}/jugadores/materialista`), { nombre, rol:'materialista', online:true });
       onValue(ref(db,`sesiones/${sesion}/etapaActiva`), snap => {
         etapaActual = snap.val()||1;
         document.getElementById('stage-badge').textContent = 'Etapa ' + etapaActual;
-        escucharTarjetas();
+        actualizarVistaEtapa();
       });
     };
+
+    function actualizarVistaEtapa() {
+      const bloqueado = etapaActual >= 2;
+      document.getElementById('bloqueado-msg').style.display = bloqueado ? 'block' : 'none';
+      document.getElementById('game-area').style.display     = bloqueado ? 'none'  : 'block';
+      document.getElementById('etapa-chip-blq').textContent  = 'Etapa activa: ' + etapaActual;
+      if (!bloqueado) escucharTarjetas();
+    }
 
     let listener = null;
     function escucharTarjetas() {
@@ -162,7 +180,6 @@
       );
     }
 
-    // Agrupa tarjetas que salieron juntas (mismo timestamp ±2s)
     function agruparPorTs(ids, campo) {
       const validos = ids.filter(id => tarjetasData[id][campo]);
       if (!validos.length) return [];
@@ -184,29 +201,19 @@
       let html = '';
 
       FLUJO.forEach(f => {
-        // Bandeja SALIDA: tarjetas que el jugador envió pero aún no fueron movidas por el materialista
         const enSalida = agruparPorTs(
           ids.filter(id => tarjetasData[id][f.campoSalida] && !tarjetasData[id][f.campoEntradaSig]),
           f.campoSalida
         );
-        // Bandeja ENTRADA del SIGUIENTE: tarjetas que el materialista ya movió
         const enEntrada = agruparPorTs(
           ids.filter(id => tarjetasData[id][f.campoEntradaSig]),
           f.campoEntradaSig
         );
-
         const totalSalida  = enSalida.reduce((s,c)=>s+c.ids.length,0);
         const totalEntrada = enEntrada.reduce((s,c)=>s+c.ids.length,0);
         const siguienteLabel = f.siguiente.charAt(0).toUpperCase()+f.siguiente.slice(1);
-
-        const cajasHtmlSalida = enSalida.length
-          ? enSalida.map(c => cajaDom(c, f, 'salida')).join('')
-          : '<span class="caja-vacia">Vacía</span>';
-
-        const cajasHtmlEntrada = enEntrada.length
-          ? enEntrada.map(c => cajaDom(c, f, 'entrada')).join('')
-          : '<span class="caja-vacia">Vacía</span>';
-
+        const cajasHtmlSalida  = enSalida.length  ? enSalida.map(c=>cajaDom(c,f,'salida')).join('')  : '<span class="caja-vacia">Vacía</span>';
+        const cajasHtmlEntrada = enEntrada.length ? enEntrada.map(c=>cajaDom(c,f,'entrada')).join('') : '<span class="caja-vacia">Vacía</span>';
         html += `
           <div class="color-block" id="block-${f.color}">
             <div class="color-block-header">
@@ -215,150 +222,85 @@
               <span style="font-size:0.68rem;color:#555;margin-left:auto">arrastra de Salida → Entrada ${siguienteLabel}</span>
             </div>
             <div class="bandejas-row">
-              <!-- SALIDA -->
               <div class="bandeja salida" id="salida-${f.color}">
-                <div class="bandeja-label" style="color:${f.hex}">
-                  <span><span class="bl-icon">📤</span>Salida ${f.label}</span>
-                  <span class="bandeja-count">${totalSalida}</span>
-                </div>
+                <div class="bandeja-label" style="color:${f.hex}"><span><span class="bl-icon">📤</span>Salida ${f.label}</span><span class="bandeja-count">${totalSalida}</span></div>
                 <div class="cajas-wrap" id="cajas-salida-${f.color}">${cajasHtmlSalida}</div>
               </div>
-              <!-- Flecha -->
               <div class="arrow-col"><span>→</span></div>
-              <!-- ENTRADA SIGUIENTE -->
               <div class="bandeja entrada" id="entrada-${f.siguiente}"
                 ondragover="dragOver(event,'entrada-${f.siguiente}')"
                 ondragleave="dragLeave('entrada-${f.siguiente}')"
                 ondrop="drop(event,'entrada-${f.siguiente}','${f.color}')">
-                <div class="bandeja-label" style="color:#aaa">
-                  <span><span class="bl-icon">📥</span>Entrada ${siguienteLabel}</span>
-                  <span class="bandeja-count">${totalEntrada}</span>
-                </div>
+                <div class="bandeja-label" style="color:#aaa"><span><span class="bl-icon">📥</span>Entrada ${siguienteLabel}</span><span class="bandeja-count">${totalEntrada}</span></div>
                 <div class="cajas-wrap" id="cajas-entrada-${f.siguiente}">${cajasHtmlEntrada}</div>
               </div>
             </div>
           </div>`;
       });
-
       document.getElementById('pipeline').innerHTML = html || '<p style="color:#555">Sin tarjetas aún.</p>';
       setupMouseDrag();
     }
 
     function cajaDom(c, f, tipo) {
-      // Solo las cajas en SALIDA son arrastrables
       const draggable = tipo === 'salida';
       const nums = c.ids.map(x=>tarjetasData[x]?.numero).filter(Boolean).sort((a,b)=>a-b);
       return `<div class="caja" style="background:${f.hex}22;border-color:${f.hex}55;"
         ${draggable ? `data-color="${f.color}" data-ids="${c.ids.join(',')}" draggable="true"
-        ontouchstart="touchStart(event)" ontouchmove="touchMove(event)" ontouchend="touchEnd(event)"` : ''}
-        >
+        ontouchstart="touchStart(event)" ontouchmove="touchMove(event)" ontouchend="touchEnd(event)"` : ''}>
         <div class="caja-icon">📦</div>
         <div class="caja-num" style="color:${f.hex}">${c.ids.length} tarj.</div>
         <div class="caja-ids">#${nums.join(',')}</div>
       </div>`;
     }
 
-    // ── MOVER CAJA ──
     async function moverCaja(ids, colorOrigen, destinoEl) {
       const f = FLUJO.find(x => x.color === colorOrigen);
       if (!f) return;
-      // Optimistic: mover visualmente al instante
       const origenWrap  = document.getElementById(`cajas-salida-${colorOrigen}`);
       const destinoWrap = document.getElementById(`cajas-entrada-${f.siguiente}`);
       if (origenWrap && destinoWrap && destinoEl) {
         const cajaEl = destinoEl.closest('.caja');
         if (cajaEl) {
-          const clone = cajaEl.cloneNode(true);
-          clone.removeAttribute('draggable');
-          clone.style.cursor = 'default';
-          // Quitar listeners
-          const fresh = clone.cloneNode(true);
+          const fresh = cajaEl.cloneNode(true);
+          fresh.removeAttribute('draggable'); fresh.style.cursor='default';
           const vacia = destinoWrap.querySelector('.caja-vacia');
           if (vacia) vacia.remove();
-          destinoWrap.appendChild(fresh);
-          cajaEl.remove();
-          if (!origenWrap.children.length) origenWrap.innerHTML = '<span class="caja-vacia">Vacía</span>';
-          // Actualizar contadores
-          const sc = document.querySelector(`#salida-${colorOrigen} .bandeja-count`);
-          const ec = document.querySelector(`#entrada-${f.siguiente} .bandeja-count`);
-          if (sc) { const v=Math.max(0,(parseInt(sc.textContent)||0)-ids.length); sc.textContent=v; }
-          if (ec) { const v=(parseInt(ec.textContent)||0)+ids.length; ec.textContent=v; }
+          destinoWrap.appendChild(fresh); cajaEl.remove();
+          if (!origenWrap.children.length) origenWrap.innerHTML='<span class="caja-vacia">Vacía</span>';
+          const sc=document.querySelector(`#salida-${colorOrigen} .bandeja-count`);
+          const ec=document.querySelector(`#entrada-${f.siguiente} .bandeja-count`);
+          if (sc){const v=Math.max(0,(parseInt(sc.textContent)||0)-ids.length);sc.textContent=v;}
+          if (ec){const v=(parseInt(ec.textContent)||0)+ids.length;ec.textContent=v;}
         }
       }
-      // Escribir en Firebase
-      const ts = Date.now();
-      const updates = {};
-      ids.forEach(id => {
-        updates[`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${id}/${f.campoEntradaSig}`] = ts;
-      });
-      await update(ref(db), updates);
+      const ts=Date.now();
+      const updates={};
+      ids.forEach(id=>{ updates[`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${id}/${f.campoEntradaSig}`]=ts; });
+      await update(ref(db),updates);
       setStatus(`✅ ${ids.length} tarjeta${ids.length>1?'s':''} movida${ids.length>1?'s':''} → Entrada ${f.siguiente.charAt(0).toUpperCase()+f.siguiente.slice(1)}`);
     }
 
-    // ── DRAG MOUSE ──
-    let dragData = null;
+    let dragData=null;
     function setupMouseDrag() {
-      document.querySelectorAll('.caja[draggable]').forEach(el => {
-        el.addEventListener('dragstart', e => {
-          dragData = { color: el.dataset.color, ids: el.dataset.ids.split(','), el };
-          e.dataTransfer.effectAllowed = 'move';
-        });
+      document.querySelectorAll('.caja[draggable]').forEach(el=>{
+        el.addEventListener('dragstart',e=>{ dragData={color:el.dataset.color,ids:el.dataset.ids.split(','),el}; e.dataTransfer.effectAllowed='move'; });
       });
     }
-    window.dragOver  = (e, id) => { e.preventDefault(); document.getElementById(id)?.classList.add('drop-over'); };
-    window.dragLeave = id      => { document.getElementById(id)?.classList.remove('drop-over'); };
-    window.drop = function(e, zonaId, colorOrigen) {
-      e.preventDefault();
-      document.getElementById(zonaId)?.classList.remove('drop-over');
-      if (!dragData || dragData.color !== colorOrigen) {
-        setStatus('⚠️ Solo puedes mover de Salida a la Entrada del siguiente color.');
-        dragData = null; return;
-      }
-      moverCaja(dragData.ids, dragData.color, dragData.el);
-      dragData = null;
+    window.dragOver  = (e,id)=>{ e.preventDefault(); document.getElementById(id)?.classList.add('drop-over'); };
+    window.dragLeave = id   =>{ document.getElementById(id)?.classList.remove('drop-over'); };
+    window.drop = function(e,zonaId,colorOrigen) {
+      e.preventDefault(); document.getElementById(zonaId)?.classList.remove('drop-over');
+      if (!dragData||dragData.color!==colorOrigen){ setStatus('⚠️ Solo puedes mover de Salida a la Entrada del siguiente color.'); dragData=null; return; }
+      moverCaja(dragData.ids,dragData.color,dragData.el); dragData=null;
     };
 
-    // ── DRAG TOUCH ──
-    const ghost = document.getElementById('drag-ghost');
-    let touchDragData = null;
-    window.touchStart = function(e) {
-      const el = e.currentTarget;
-      touchDragData = { color: el.dataset.color, ids: el.dataset.ids.split(','), el };
-      const f = FLUJO.find(x => x.color === el.dataset.color);
-      ghost.style.background = f?.hex || '#17a2b8';
-      ghost.innerHTML = '<div style="font-size:1.2rem">📦</div>';
-      ghost.style.display = 'flex';
-    };
-    window.touchMove = function(e) {
-      e.preventDefault();
-      const t = e.touches[0];
-      ghost.style.left = t.clientX+'px'; ghost.style.top = t.clientY+'px';
-      document.querySelectorAll('.bandeja.drop-over').forEach(z=>z.classList.remove('drop-over'));
-      document.elementFromPoint(t.clientX,t.clientY)?.closest('.bandeja.entrada')?.classList.add('drop-over');
-    };
-    window.touchEnd = function(e) {
-      ghost.style.display = 'none';
-      document.querySelectorAll('.bandeja.drop-over').forEach(z=>z.classList.remove('drop-over'));
-      if (!touchDragData) return;
-      const t = e.changedTouches[0];
-      const bandeja = document.elementFromPoint(t.clientX,t.clientY)?.closest('.bandeja.entrada');
-      if (bandeja) {
-        const zonaId = bandeja.id; // entrada-{color}
-        const colorDestino = zonaId.replace('entrada-','');
-        const f = FLUJO.find(x => x.siguiente === colorDestino);
-        if (f && f.color === touchDragData.color) {
-          moverCaja(touchDragData.ids, touchDragData.color, touchDragData.el);
-        } else {
-          setStatus('⚠️ Solo puedes mover de Salida a la Entrada del siguiente color.');
-        }
-      }
-      touchDragData = null;
-    };
+    const ghost=document.getElementById('drag-ghost');
+    let touchDragData=null;
+    window.touchStart=function(e){ const el=e.currentTarget; touchDragData={color:el.dataset.color,ids:el.dataset.ids.split(','),el}; const f=FLUJO.find(x=>x.color===el.dataset.color); ghost.style.background=f?.hex||'#17a2b8'; ghost.innerHTML='<div style="font-size:1.2rem">📦</div>'; ghost.style.display='flex'; };
+    window.touchMove=function(e){ e.preventDefault(); const t=e.touches[0]; ghost.style.left=t.clientX+'px'; ghost.style.top=t.clientY+'px'; document.querySelectorAll('.bandeja.drop-over').forEach(z=>z.classList.remove('drop-over')); document.elementFromPoint(t.clientX,t.clientY)?.closest('.bandeja.entrada')?.classList.add('drop-over'); };
+    window.touchEnd=function(e){ ghost.style.display='none'; document.querySelectorAll('.bandeja.drop-over').forEach(z=>z.classList.remove('drop-over')); if(!touchDragData)return; const t=e.changedTouches[0]; const bandeja=document.elementFromPoint(t.clientX,t.clientY)?.closest('.bandeja.entrada'); if(bandeja){ const zonaId=bandeja.id; const colorDestino=zonaId.replace('entrada-',''); const f=FLUJO.find(x=>x.siguiente===colorDestino); if(f&&f.color===touchDragData.color){ moverCaja(touchDragData.ids,touchDragData.color,touchDragData.el); }else{ setStatus('⚠️ Solo puedes mover de Salida a la Entrada del siguiente color.'); } } touchDragData=null; };
 
-    function setStatus(msg) {
-      document.getElementById('status-msg').textContent = msg;
-      setTimeout(()=>document.getElementById('status-msg').textContent='',3000);
-    }
+    function setStatus(msg){ document.getElementById('status-msg').textContent=msg; setTimeout(()=>document.getElementById('status-msg').textContent='',3000); }
   </script>
 </body>
 </html>

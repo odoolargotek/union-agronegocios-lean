@@ -36,7 +36,6 @@
     #status-msg { font-size: 0.85rem; color: #f0c040; text-align: center; min-height: 18px; margin: 6px 0; }
     #waiting-msg { text-align: center; color: #aaa; padding: 30px 10px; font-size: 0.9rem; line-height: 1.6; }
 
-    /* ── Botón ENVIAR A SALIDA ── */
     .btn-enviar-salida { width: 100%; padding: 14px; border-radius: 10px; border: none;
                     background: linear-gradient(135deg,#1a8a3a,#0d6e2e); color: #fff;
                     font-size: 1.05rem; font-weight: 700; cursor: pointer; margin-bottom: 12px;
@@ -45,7 +44,6 @@
     .btn-enviar-salida:active { transform: scale(0.97); }
     .btn-enviar-salida:disabled { background: #444; box-shadow: none; cursor: not-allowed; }
 
-    /* Banner bandeja de salida */
     .salida-banner { background: #0d2518; border: 1px solid #1a8a3a55; border-radius: 8px;
                      padding: 8px 12px; margin-bottom: 10px; font-size: 0.78rem; color: #1a8a3a;
                      display: flex; align-items: center; gap: 8px; }
@@ -125,7 +123,6 @@
     <input type="text" id="inp-nombre" placeholder="Ej: Juan" maxlength="20">
     <button class="primary" onclick="entrar()">Entrar al juego</button>
     <p style="margin-top:12px;font-size:0.72rem;color:#555;text-align:center">
-      ¿Eres materialista? <a href="materialista.html" style="color:#17a2b8">→ Tu página</a> &nbsp;|
       ¿Inspector? <a href="calidad.html" style="color:#6f42c1">→ Tu página</a>
     </p>
   </div>
@@ -175,8 +172,8 @@
     const ORDEN_TURNOS = ['amarillo','naranja','rojo','verde'];
     const LOTE_CONFIG = {
       1: { nombre:'Etapa 1 — Libre', desc:'Fabrica y presiona <b>Enviar a Salida</b> cuando quieras. El materialista mueve las cajas.' },
-      2: { nombre:'Etapa 2 — Lote de 2', desc:'Trabaja de <b>2 en 2</b> y envía el par a tu bandeja de salida.' },
-      3: { nombre:'Etapa 3 — Flujo unitario', desc:'Envía <b>tarjeta por tarjeta</b> a tu salida de inmediato.' }
+      2: { nombre:'Etapa 2 — Lote de 2', desc:'Trabaja de <b>2 en 2</b>. Al enviar, la tarjeta pasa <b>directo</b> al siguiente operario.' },
+      3: { nombre:'Etapa 3 — Flujo unitario', desc:'Envía <b>tarjeta por tarjeta</b>. Verás tu <b>score en tiempo real</b> 🎯.' }
     };
 
     const UMBRAL_OK       = 10;
@@ -187,8 +184,11 @@
 
     let sesion, equipo, rol, nombre, etapaActual=1, tarjetasListener=null, tarjetasData={};
 
+    // Etapa 3: score visible al operario
     function scoreVisible()     { return etapaActual >= 3; }
     function precisionVisible() { return etapaActual >= 3; }
+    // Etapas 2 y 3: flujo directo sin materialista
+    function flujoDirecto()     { return etapaActual >= 2; }
 
     window.entrar = function() {
       sesion = document.getElementById('inp-sesion').value.trim().toUpperCase();
@@ -228,17 +228,6 @@
       );
     }
 
-    // El jugador puede trabajar si el anterior ya envió a su SALIDA
-    // Campo: salida_{color} = timestamp cuando el jugador presionó "Enviar a Salida"
-    // Amarillo no necesita esperar a nadie
-    function anteriorEnvioSalida(t, miRol) {
-      const idx = ORDEN_TURNOS.indexOf(miRol);
-      if (idx <= 0) return true;
-      const anterior = ORDEN_TURNOS[idx - 1];
-      // El materialista movió la caja a mi bandeja de entrada
-      return !!t[`entrada_${miRol}`];
-    }
-
     function render() {
       const container = document.getElementById('tarjetas-container');
       const ids = Object.keys(tarjetasData);
@@ -250,27 +239,27 @@
       const misPosiciones = POSICIONES.filter(p => p.color === rol);
       const todas = ids.sort((a,b) => (tarjetasData[a].numero||0)-(tarjetasData[b].numero||0));
 
-      // Tarjetas en mi bandeja de ENTRADA (materialista me las trajo)
-      // Amarillo: todas las tarjetas están disponibles desde el inicio (no necesita materialista)
+      // En etapas 2/3 el flujo es directo: el campo entrada_{rol} lo escribimos nosotros al enviar
+      // Amarillo siempre puede empezar (no espera a nadie)
       const enEntrada = todas.filter(id => {
         const t = tarjetasData[id];
-        if (t[`salida_${rol}`]) return false; // ya la envié a salida
-        if (rol === 'amarillo') return !t[`salida_amarillo`];
+        if (t[`salida_${rol}`]) return false;
+        if (rol === 'amarillo') return true;
         return !!t[`entrada_${rol}`] && !t[`salida_${rol}`];
       });
 
-      // Tarjetas en mi bandeja de SALIDA (ya procesé y envié, esperando materialista)
-      const enSalida = todas.filter(id => {
+      // En bandeja de salida: ya procesé pero en etapa 1 aún espero al materialista
+      const idxRol = ORDEN_TURNOS.indexOf(rol);
+      const siguiente = idxRol < ORDEN_TURNOS.length - 1 ? ORDEN_TURNOS[idxRol + 1] : null;
+      const enSalida = siguiente ? todas.filter(id => {
         const t = tarjetasData[id];
-        return !!t[`salida_${rol}`] && !t[`entrada_${ORDEN_TURNOS[ORDEN_TURNOS.indexOf(rol)+1]}`];
-      }).filter(id => ORDEN_TURNOS.indexOf(rol) < ORDEN_TURNOS.length - 1); // verde no tiene siguiente
+        return !!t[`salida_${rol}`] && !t[`entrada_${siguiente}`];
+      }) : [];
 
-      // Listas para enviar a salida (tienen mis etiquetas completas)
       const listasParaSalida = enEntrada.filter(id =>
         misPosiciones.every(p => tarjetasData[id][p.id] !== undefined)
       );
 
-      // En fabricación (en entrada pero sin etiquetas completas)
       const enFabricacion = enEntrada
         .filter(id => misPosiciones.some(p => tarjetasData[id][p.id] === undefined))
         .slice(0, BANDEJA);
@@ -282,34 +271,34 @@
 
       let html = '';
 
-      // ── Botón Enviar a Salida ──
       const puedoEnviar = listasParaSalida.length > 0;
       html += `<button class="btn-enviar-salida" onclick="enviarASalida()" ${puedoEnviar?'':'disabled'}>
-        📤 ENVIAR A SALIDA${puedoEnviar ? ` (${listasParaSalida.length} tarjeta${listasParaSalida.length>1?'s':''})` : ' — termina de pegar etiquetas'}
+        📤 ENVIAR${puedoEnviar ? ` (${listasParaSalida.length} tarjeta${listasParaSalida.length>1?'s':''})` : ' — termina de pegar etiquetas'}
       </button>`;
 
-      // ── Banner bandeja de salida ──
-      if (enSalida.length > 0) {
+      // Banner de salida: solo en etapa 1 (en 2/3 el flujo es directo, no hay espera)
+      if (!flujoDirecto() && enSalida.length > 0) {
         html += `<div class="salida-banner">
           📤 Bandeja de Salida — <span class="sal-count">${enSalida.length}</span>&nbsp;tarjeta${enSalida.length>1?'s':''} esperando al materialista
         </div>`;
       }
 
-      // ── Tarjetas listas para enviar ──
       if (listasParaSalida.length) {
-        html += `<div style="font-size:0.7rem;color:#28a745;margin-bottom:6px">✅ Listas para enviar a salida</div>`;
+        html += `<div style="font-size:0.7rem;color:#28a745;margin-bottom:6px">✅ Listas para enviar</div>`;
         html += listasParaSalida.map(id => renderTarjeta(id, tarjetasData[id], true)).join('');
       }
 
-      // ── En fabricación ──
       if (enFabricacion.length) {
         html += `<div style="font-size:0.7rem;color:#aaa;margin-bottom:6px;margin-top:4px">🔧 En fabricación</div>`;
         html += enFabricacion.map(id => renderTarjeta(id, tarjetasData[id], true)).join('');
       }
 
-      // ── Esperando materialista (si no hay nada en entrada) ──
+      // Mensaje de espera adaptado a la etapa
       if (!enEntrada.length && rol !== 'amarillo') {
-        html += `<div id="waiting-msg" style="padding:20px 0">⏳ Esperando que el materialista traiga tarjetas a tu bandeja de entrada...</div>`;
+        const msg = flujoDirecto()
+          ? '⏳ Esperando tarjetas del operario anterior...'
+          : '⏳ Esperando que el materialista traiga tarjetas a tu bandeja de entrada...';
+        html += `<div id="waiting-msg" style="padding:20px 0">${msg}</div>`;
       }
 
       container.innerHTML = html;
@@ -321,7 +310,7 @@
       const yaEnvie = !!t[`salida_${rol}`];
       const todasLlenas = POSICIONES.every(p => t[p.id] !== undefined);
       const estadoLabel = yaEnvie?'entregada':t.aprobada?'aprobada':t.rechazada?'rechazada':todasLlenas?'revision':'';
-      const estadoTxt   = yaEnvie?'📤 En salida':t.aprobada?'✅ Aprobada':t.rechazada?'❌ Defecto':todasLlenas?'🔍 Revisión':'';
+      const estadoTxt   = yaEnvie?'📤 Enviada':t.aprobada?'✅ Aprobada':t.rechazada?'❌ Defecto':todasLlenas?'🔍 Revisión':'';
       const mostrarScore = scoreVisible();
       const filas = [0,1].map(row => {
         const zonas = POSICIONES.filter(p => p.row === row).map(pos => {
@@ -344,7 +333,7 @@
       return `<div class="paper-card${yaEnvie?' entregada-card':''}" id="pc-${id}"><div class="card-header"><span class="card-num">TARJETA #${t.numero}</span><span class="card-logo">UA Lean</span>${estadoLabel?`<span class="card-estado ${estadoLabel}">${estadoTxt}</span>`:''}</div>${filas}${dragHtml}</div>`;
     }
 
-    // Jugador presiona "Enviar a Salida" — escribe salida_{rol} en Firebase
+    // Enviar a salida — en etapas 2/3 también escribe entrada_{siguiente} automáticamente
     window.enviarASalida = async function() {
       const ids = Object.keys(tarjetasData);
       const misPosiciones = POSICIONES.filter(p => p.color === rol);
@@ -356,16 +345,28 @@
       if (!aEnviar.length) return;
       const ts = Date.now();
       const updates = {};
+      const idxRol = ORDEN_TURNOS.indexOf(rol);
+      const siguiente = idxRol < ORDEN_TURNOS.length - 1 ? ORDEN_TURNOS[idxRol + 1] : null;
+
       aEnviar.forEach(id => {
-        updates[`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${id}/salida_${rol}`] = ts;
-        // Compatibilidad con instructor: también escribir entregado_{rol}
-        updates[`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${id}/entregado_${rol}`] = ts;
+        const basePath = `sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${id}`;
+        updates[`${basePath}/salida_${rol}`]     = ts;
+        updates[`${basePath}/entregado_${rol}`]  = ts;  // compatibilidad instructor
+        if (flujoDirecto()) {
+          // Flujo directo: escribir entrada del siguiente sin esperar materialista
+          if (siguiente) {
+            updates[`${basePath}/entrada_${siguiente}`] = ts;
+          } else {
+            // Verde → Calidad directamente
+            updates[`${basePath}/entrada_calidad`] = ts;
+          }
+        }
       });
-      // Amarillo: actualizar WIP
+
       const snap = await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/wip`));
       updates[`sesiones/${sesion}/equipos/${equipo}/metricas/wip`] = (snap.val()||0) + aEnviar.length;
       await update(ref(db), updates);
-      setStatus(`📤 ${aEnviar.length} tarjeta${aEnviar.length>1?'s':''} enviada${aEnviar.length>1?'s':''} a tu bandeja de salida ✅`);
+      setStatus(`📤 ${aEnviar.length} tarjeta${aEnviar.length>1?'s':''} enviada${aEnviar.length>1?'s':''} ✅`);
     };
 
     let dragTid = null;
