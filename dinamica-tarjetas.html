@@ -32,17 +32,19 @@
     .lote-info b { color: #f0c040; }
     #status-msg { font-size: 0.85rem; color: #f0c040; text-align: center; min-height: 18px; margin: 6px 0; }
     #waiting-msg { text-align: center; color: #aaa; padding: 30px 10px; font-size: 0.9rem; line-height: 1.6; }
-    /* Botón entregar - siempre arriba */
+    /* Botón entregar */
     .btn-entregar { width: 100%; padding: 14px; border-radius: 10px; border: none;
                     background: linear-gradient(135deg,#1a8a3a,#0d6e2e); color: #fff;
                     font-size: 1.05rem; font-weight: 700; cursor: pointer; margin-bottom: 12px;
                     box-shadow: 0 3px 14px rgba(26,138,58,0.45); letter-spacing: 0.5px;
                     transition: transform 0.1s; }
     .btn-entregar:active { transform: scale(0.97); }
+    .btn-entregar:disabled { background: #444; box-shadow: none; cursor: not-allowed; }
     /* Paper card */
     .paper-card { background: #fffef0; border-radius: 8px;
                   box-shadow: 2px 3px 12px rgba(0,0,0,0.5); padding: 12px 12px 8px;
                   margin-bottom: 12px; color: #222; user-select: none; }
+    .paper-card.entregada-card { opacity: 0.45; }
     .card-header { display: flex; justify-content: space-between; align-items: center;
                    border-bottom: 1px solid #ccc; padding-bottom: 6px; margin-bottom: 8px; }
     .card-num  { font-size: 0.75rem; font-weight: 700; color: #444; }
@@ -169,19 +171,20 @@
     const ORDEN_TURNOS = ['amarillo','naranja','rojo','verde'];
 
     const LOTE_CONFIG = {
-      1: { nombre:'Etapa 1 — Libre', desc:'Pega tus etiquetas y presiona <b>Entregar</b> cuando quieras.' },
-      2: { nombre:'Etapa 2 — Lote de 2', desc:'Trabaja de <b>2 en 2</b> y entrega cuando completes el par.' },
+      1: { nombre:'Etapa 1 — Libre', desc:'Fabrica, pega etiquetas y <b>Entrega cuando quieras</b>. Sigue fabricando.' },
+      2: { nombre:'Etapa 2 — Lote de 2', desc:'Trabaja de <b>2 en 2</b> y entrega el par.' },
       3: { nombre:'Etapa 3 — Flujo unitario', desc:'Entrega <b>tarjeta por tarjeta</b> de inmediato.' }
     };
 
     const UMBRAL_OK = 18, UMBRAL_MARGINAL = 35;
+    // Cuántas tarjetas se muestran a la vez en bandeja
+    const BANDEJA = 4;
 
     let sesion, equipo, rol, nombre;
     let etapaActual = 1;
     let tarjetasListener = null;
     let tarjetasData = {};
 
-    // ── LOGIN ─────────────────────────────────────────────────
     window.entrar = function() {
       sesion = document.getElementById('inp-sesion').value.trim().toUpperCase();
       equipo = document.getElementById('inp-equipo').value;
@@ -224,14 +227,12 @@
       );
     }
 
-    // El anterior entregó = yo puedo pegar (o soy amarillo, primero)
     function anteriorEntrego(t, miRol) {
       const idx = ORDEN_TURNOS.indexOf(miRol);
       if (idx <= 0) return true;
       return !!t[`entregado_${ORDEN_TURNOS[idx-1]}`];
     }
 
-    // ── RENDER PRINCIPAL ────────────────────────────────────────
     function render() {
       const container = document.getElementById('tarjetas-container');
       const ids = Object.keys(tarjetasData);
@@ -244,45 +245,68 @@
       if (rol === 'calidad')      { renderCalidad(container, ids); return; }
       if (rol === 'materialista') { renderMaterialista(container, ids); return; }
 
-      // Tarjetas que yo todavía no entregue, ordenadas por número
-      const misPendientes = ids
-        .filter(id => !tarjetasData[id][`entregado_${rol}`])
-        .sort((a,b) => (tarjetasData[a].numero||0) - (tarjetasData[b].numero||0));
+      const misPosiciones = POSICIONES.filter(p => p.color === rol);
 
-      if (!misPendientes.length) {
-        container.innerHTML = '<div id="waiting-msg">🎉 ¡Terminaste todas las tarjetas!</div>';
+      // Todas ordenadas por número
+      const todas = ids.sort((a,b) => (tarjetasData[a].numero||0) - (tarjetasData[b].numero||0));
+
+      // Sin entregar aún por mí
+      const sinEntregar = todas.filter(id => !tarjetasData[id][`entregado_${rol}`]);
+
+      // Con etiqueta mía = listas para despachar
+      const conMiEtiqueta = sinEntregar.filter(id =>
+        misPosiciones.some(p => tarjetasData[id][p.id] !== undefined)
+      );
+
+      // Sin etiqueta mía = en fabricación (solo muestro las primeras BANDEJA)
+      const enFabricacion = sinEntregar
+        .filter(id => misPosiciones.every(p => tarjetasData[id][p.id] === undefined))
+        .slice(0, BANDEJA);
+
+      if (!sinEntregar.length) {
+        // Caso: todas las 40 entregadas — solo posible si terminó la etapa
+        container.innerHTML = '<div id="waiting-msg">✅ Todas las tarjetas entregadas esta etapa.</div>';
         return;
       }
 
-      // Cuantas tienen al menos 1 etiqueta mía
-      const misPosiciones = POSICIONES.filter(p => p.color === rol);
-      const conEtiqueta   = misPendientes.filter(id =>
-        misPosiciones.some(p => tarjetasData[id][p.id] !== undefined)
-      ).length;
+      // Botón Entregar arriba — habilitado solo si hay algo con etiqueta
+      const btnLabel = conMiEtiqueta.length
+        ? `📦 ENTREGAR (${conMiEtiqueta.length} lista${conMiEtiqueta.length>1?'s':''})`
+        : `📦 ENTREGAR — pega al menos 1 etiqueta primero`;
 
-      // Botón ENTREGAR arriba — siempre visible
-      let html = `<button class="btn-entregar" onclick="entregarLote()">
-        📦 ENTREGAR (${misPendientes.length} pendiente${misPendientes.length>1?'s':''}${conEtiqueta?' • '+conEtiqueta+' con etiqueta':''})
+      let html = `<button class="btn-entregar" onclick="entregarLote()" ${conMiEtiqueta.length?'':'disabled'}>
+        ${btnLabel}
       </button>`;
 
-      // Tarjetas
-      html += misPendientes.map(id => {
-        const t = tarjetasData[id];
-        return renderTarjeta(id, t, anteriorEntrego(t, rol));
-      }).join('');
+      // Tarjetas con etiqueta mía (listas para despacho)
+      if (conMiEtiqueta.length) {
+        html += `<div style="font-size:0.7rem;color:#f0c040;margin-bottom:6px">📋 Listas para entregar</div>`;
+        html += conMiEtiqueta.map(id => renderTarjeta(id, tarjetasData[id], anteriorEntrego(tarjetasData[id], rol), false)).join('');
+      }
+
+      // Tarjetas sin etiqueta (en fabricación)
+      if (enFabricacion.length) {
+        html += `<div style="font-size:0.7rem;color:#aaa;margin-bottom:6px;margin-top:4px">🔧 En fabricación</div>`;
+        html += enFabricacion.map(id => renderTarjeta(id, tarjetasData[id], anteriorEntrego(tarjetasData[id], rol), false)).join('');
+      }
 
       container.innerHTML = html;
       setupDropZones();
     }
 
-    function renderTarjeta(id, t, puedo) {
+    function renderTarjeta(id, t, puedo, _unused) {
       const misPosiciones = POSICIONES.filter(p => p.color === rol);
+      const yaEntregue    = !!t[`entregado_${rol}`];
       const todasLlenas   = POSICIONES.every(p => t[p.id] !== undefined);
 
-      const estadoLabel = t.aprobada   ? 'aprobada'  : t.rechazada ? 'rechazada' :
-                          todasLlenas  ? 'revision'  : '';
-      const estadoTxt   = t.aprobada   ? '✅ Aprobada' : t.rechazada ? '❌ Defecto'  :
-                          todasLlenas  ? '🔍 En revisión' : '';
+      const estadoLabel = yaEntregue    ? 'entregada' :
+                          t.aprobada    ? 'aprobada'  :
+                          t.rechazada   ? 'rechazada' :
+                          todasLlenas   ? 'revision'  : '';
+      const estadoTxt   = yaEntregue    ? '📦 Entregada' :
+                          t.aprobada    ? '✅ Aprobada'  :
+                          t.rechazada   ? '❌ Defecto'   :
+                          todasLlenas   ? '🔍 Revisión'  : '';
 
       const filas = [0,1].map(row => {
         const zonas = POSICIONES.filter(p=>p.row===row).map(pos => {
@@ -296,7 +320,7 @@
                 <span class="score-badge ${sc}">${s}%</span>
               </div></div>`;
           }
-          const esMio = pos.color === rol && puedo;
+          const esMio = pos.color === rol && puedo && !yaEntregue;
           return `<div class="drop-zone${esMio?' mia':''}" data-pos="${pos.id}" data-tid="${id}"
             style="${esMio?'border-color:'+COLORES[rol]+';':''}"
             >${esMio?'<span style="color:'+COLORES[rol]+';font-size:0.55rem">drop</span>':''}</div>`;
@@ -304,10 +328,10 @@
         return `<div class="etiqueta-fila">${zonas}</div>`;
       }).join('');
 
-      const meFalta    = misPosiciones.some(p => t[p.id] === undefined);
-      const bloqMsg    = !puedo ? `<div style="font-size:0.72rem;color:#888;text-align:center;padding:6px 0">
+      const meFalta  = misPosiciones.some(p => t[p.id] === undefined);
+      const bloqMsg  = !puedo ? `<div style="font-size:0.72rem;color:#888;text-align:center;padding:6px 0">
         ⏳ Esperando que ${ORDEN_TURNOS[ORDEN_TURNOS.indexOf(rol)-1]} entregue...</div>` : '';
-      const dragHtml   = meFalta && puedo ? `
+      const dragHtml = meFalta && puedo && !yaEntregue ? `
         <div class="drag-area">
           <div class="da-label">Arrastra tu etiqueta ↓</div>
           <div class="draggable-etiqueta" style="background:${COLORES[rol]}"
@@ -317,7 +341,7 @@
           </div>
         </div>` : bloqMsg;
 
-      return `<div class="paper-card" id="pc-${id}">
+      return `<div class="paper-card${yaEntregue?' entregada-card':''}" id="pc-${id}">
         <div class="card-header">
           <span class="card-num">TARJETA #${t.numero}</span>
           <span class="card-logo">UA Lean</span>
@@ -325,11 +349,18 @@
         </div>${filas}${dragHtml}</div>`;
     }
 
-    // ── ENTREGAR — marca TODAS las pendientes como entregadas ───────
+    // ── ENTREGAR: solo las que tienen al menos 1 etiqueta mía ──
     window.entregarLote = async function() {
       const ids = Object.keys(tarjetasData);
+      const misPosiciones = POSICIONES.filter(p => p.color === rol);
+
+      // Solo despacha las que tienen etiqueta mía y no están entregadas
       const aEntregar = ids
-        .filter(id => !tarjetasData[id][`entregado_${rol}`])
+        .filter(id => {
+          const t = tarjetasData[id];
+          return !t[`entregado_${rol}`] &&
+                 misPosiciones.some(p => t[p.id] !== undefined);
+        })
         .sort((a,b) => (tarjetasData[a].numero||0) - (tarjetasData[b].numero||0));
 
       if (!aEntregar.length) return;
@@ -342,10 +373,10 @@
       const snap = await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/wip`));
       updates[`sesiones/${sesion}/equipos/${equipo}/metricas/wip`] = (snap.val()||0) + aEntregar.length;
       await update(ref(db), updates);
-      setStatus(`📦 ${aEntregar.length} tarjeta${aEntregar.length>1?'s':''} entregada${aEntregar.length>1?'s':''} ✅`);
+      setStatus(`📦 ${aEntregar.length} tarjeta${aEntregar.length>1?'s':''} despachada${aEntregar.length>1?'s':''} ✅`);
     };
 
-    // ── CALIDAD ─────────────────────────────────────────────────
+    // ── CALIDAD ──────────────────────────────────────────────
     function renderCalidad(container, ids) {
       const enRevision = ids.filter(id => {
         const t = tarjetasData[id];
@@ -386,7 +417,7 @@
       setStatus(aprobada ? '✅ Tarjeta aprobada' : '❌ Defecto registrado');
     };
 
-    // ── MATERIALISTA ────────────────────────────────────────────
+    // ── MATERIALISTA ──────────────────────────────────────────
     function renderMaterialista(container, ids) {
       const listos = ids.filter(id => {
         const t = tarjetasData[id];
@@ -400,7 +431,7 @@
         : '<div id="waiting-msg">📦 Sin lotes listos para mover aún...</div>';
     }
 
-    // ── DRAG MOUSE ──────────────────────────────────────────────
+    // ── DRAG MOUSE ────────────────────────────────────────────
     let dragTid = null;
     function setupDropZones() {
       document.querySelectorAll('.draggable-etiqueta').forEach(el => {
@@ -419,7 +450,7 @@
       });
     }
 
-    // ── DRAG TOUCH ──────────────────────────────────────────────
+    // ── DRAG TOUCH ────────────────────────────────────────────
     const ghost = document.getElementById('drag-ghost');
     window.touchStart = function(e) {
       dragTid = e.currentTarget.dataset.tid;
@@ -442,7 +473,7 @@
       if (zone) pegarEtiqueta(zone.dataset.tid, zone.dataset.pos, t.clientX, t.clientY, zone);
     };
 
-    // ── PEGAR + SCORE ───────────────────────────────────────────
+    // ── PEGAR + SCORE ─────────────────────────────────────────
     async function pegarEtiqueta(tarjetaId, posId, dropX, dropY, zoneEl) {
       const rect = zoneEl.getBoundingClientRect();
       const dist = Math.sqrt((dropX-rect.left-rect.width/2)**2+(dropY-rect.top-rect.height/2)**2);
