@@ -78,16 +78,6 @@
                           font-weight: 700; color: #fff; cursor: grab; margin: 0 auto;
                           box-shadow: 0 2px 8px rgba(0,0,0,0.3); touch-action: none;
                           text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
-    .calidad-panel { background: #fffef0; border-radius: 8px; padding: 12px;
-                     margin-bottom: 10px; color: #222; border: 2px solid #f0c040; }
-    .calidad-panel h3 { font-size: 0.85rem; color: #333; margin-bottom: 8px; }
-    .calidad-item { display: flex; justify-content: space-between; align-items: center;
-                    padding: 7px 0; border-bottom: 1px solid #eee; font-size: 0.8rem; flex-wrap: wrap; gap: 4px; }
-    .calidad-item:last-child { border-bottom: none; }
-    .calidad-btns { display: flex; gap: 6px; }
-    .btn-aprobar  { padding: 5px 12px; border-radius: 6px; border: none; background: #28a745; color: #fff; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
-    .btn-rechazar { padding: 5px 12px; border-radius: 6px; border: none; background: #e94560; color: #fff; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
-    .score-pill { font-size: 0.7rem; padding: 2px 7px; border-radius: 10px; font-weight: 700; }
     #drag-ghost { position: fixed; pointer-events: none; z-index: 9999; width: 58px; height: 30px;
                   border-radius: 5px; display: none; align-items: center; justify-content: center;
                   font-size: 0.6rem; font-weight: 700; color: #fff; opacity: 0.88;
@@ -121,12 +111,14 @@
       <option value="naranja">🟠 Naranja (1 etiqueta/tarjeta)</option>
       <option value="rojo">🔴 Rojo (3 etiquetas/tarjeta)</option>
       <option value="verde">🟢 Verde (2 etiquetas/tarjeta)</option>
-      <option value="materialista">📦 Materialista</option>
-      <option value="calidad">🔍 Calidad / Inspector</option>
     </select>
     <label>Tu nombre</label>
     <input type="text" id="inp-nombre" placeholder="Ej: Juan" maxlength="20">
     <button class="primary" onclick="entrar()">Entrar al juego</button>
+    <p style="margin-top:12px;font-size:0.72rem;color:#555;text-align:center">
+      ¿Eres materialista? <a href="materialista.html" style="color:#17a2b8">→ Tu página</a> &nbsp;|
+      ¿Inspector? <a href="calidad.html" style="color:#6f42c1">→ Tu página</a>
+    </p>
   </div>
 
   <div id="game-area">
@@ -164,7 +156,7 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    const COLORES = { amarillo:'#f5c518', naranja:'#e07800', rojo:'#e94560', verde:'#1a8a3a', materialista:'#17a2b8', calidad:'#6f42c1' };
+    const COLORES = { amarillo:'#f5c518', naranja:'#e07800', rojo:'#e94560', verde:'#1a8a3a' };
     const POSICIONES = [
       { id:'a1', color:'amarillo', row:0 }, { id:'a2', color:'amarillo', row:0 },
       { id:'n1', color:'naranja',  row:0 }, { id:'r1', color:'rojo',     row:0 },
@@ -173,17 +165,19 @@
     ];
     const ORDEN_TURNOS = ['amarillo','naranja','rojo','verde'];
     const LOTE_CONFIG = {
-      1: { nombre:'Etapa 1 — Libre', desc:'Fabrica, pega etiquetas y <b>Entrega cuando quieras</b>. Sigue fabricando.' },
+      1: { nombre:'Etapa 1 — Libre', desc:'Fabrica y <b>Entrega cuando quieras</b>. El materialista mueve las cajas.' },
       2: { nombre:'Etapa 2 — Lote de 2', desc:'Trabaja de <b>2 en 2</b> y entrega el par.' },
       3: { nombre:'Etapa 3 — Flujo unitario', desc:'Entrega <b>tarjeta por tarjeta</b> de inmediato.' }
     };
     const UMBRAL_OK = 18, UMBRAL_MARGINAL = 35;
     const BANDEJA = 4;
 
-    let sesion, equipo, rol, nombre;
-    let etapaActual = 1;
-    let tarjetasListener = null;
-    let tarjetasData = {};
+    let sesion, equipo, rol, nombre, etapaActual=1, tarjetasListener=null, tarjetasData={};
+
+    // Score visible solo en etapa 3
+    function scoreVisible() { return etapaActual >= 3; }
+    // Feedback de precisión visible solo en etapa 3
+    function precisionVisible() { return etapaActual >= 3; }
 
     window.entrar = function() {
       sesion = document.getElementById('inp-sesion').value.trim().toUpperCase();
@@ -198,12 +192,11 @@
       document.getElementById('equipo-display').textContent = 'Equipo ' + equipo;
       set(ref(db,`sesiones/${sesion}/equipos/${equipo}/jugadores/${rol}`), { nombre, rol, online:true });
       onValue(ref(db,`sesiones/${sesion}/etapaActiva`), snap => {
-        etapaActual = snap.val() || 1;
-        actualizarHUD();
-        escucharTarjetas();
+        etapaActual = snap.val()||1;
+        actualizarHUD(); escucharTarjetas();
       });
       onValue(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas`), snap => {
-        const m = snap.val()||{};
+        const m=snap.val()||{};
         document.getElementById('m-entregadas').textContent = m.entregadas||0;
         document.getElementById('m-wip').textContent        = m.wip||0;
         document.getElementById('m-defectos').textContent   = m.defectos||0;
@@ -211,7 +204,7 @@
     };
 
     function actualizarHUD() {
-      const cfg = LOTE_CONFIG[etapaActual]||LOTE_CONFIG[1];
+      const cfg=LOTE_CONFIG[etapaActual]||LOTE_CONFIG[1];
       document.getElementById('stage-info').textContent = cfg.nombre;
       document.getElementById('lote-info').innerHTML    = cfg.desc;
     }
@@ -220,143 +213,106 @@
       if (tarjetasListener) tarjetasListener();
       tarjetasListener = onValue(
         ref(db,`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas`),
-        snap => { tarjetasData = snap.val()||{}; render(); }
+        snap => { tarjetasData=snap.val()||{}; render(); }
       );
     }
 
     function anteriorEntrego(t, miRol) {
-      const idx = ORDEN_TURNOS.indexOf(miRol);
-      if (idx <= 0) return true;
+      const idx=ORDEN_TURNOS.indexOf(miRol);
+      if (idx<=0) return true;
       return !!t[`entregado_${ORDEN_TURNOS[idx-1]}`];
     }
 
     function render() {
-      const container = document.getElementById('tarjetas-container');
-      const ids = Object.keys(tarjetasData);
-      if (!ids.length) {
-        container.innerHTML = '<div id="waiting-msg">⏳ Esperando que el instructor inicie la etapa...</div>';
-        return;
-      }
-      if (rol === 'calidad')      { renderCalidad(container, ids); return; }
-      if (rol === 'materialista') { renderMaterialista(container, ids); return; }
+      const container=document.getElementById('tarjetas-container');
+      const ids=Object.keys(tarjetasData);
+      if (!ids.length) { container.innerHTML='<div id="waiting-msg">⏳ Esperando que el instructor inicie la etapa...</div>'; return; }
 
-      const misPosiciones = POSICIONES.filter(p => p.color === rol);
-      const todas = ids.sort((a,b) => (tarjetasData[a].numero||0) - (tarjetasData[b].numero||0));
-      const sinEntregar = todas.filter(id => !tarjetasData[id][`entregado_${rol}`]);
-      const conMiEtiqueta = sinEntregar.filter(id =>
-        misPosiciones.some(p => tarjetasData[id][p.id] !== undefined)
-      );
-      const enFabricacion = sinEntregar
-        .filter(id => misPosiciones.every(p => tarjetasData[id][p.id] === undefined))
-        .slice(0, BANDEJA);
+      const misPosiciones=POSICIONES.filter(p=>p.color===rol);
+      const todas=ids.sort((a,b)=>(tarjetasData[a].numero||0)-(tarjetasData[b].numero||0));
+      const sinEntregar=todas.filter(id=>!tarjetasData[id][`entregado_${rol}`]);
+      const conMiEtiqueta=sinEntregar.filter(id=>misPosiciones.some(p=>tarjetasData[id][p.id]!==undefined));
+      const enFabricacion=sinEntregar.filter(id=>misPosiciones.every(p=>tarjetasData[id][p.id]===undefined)).slice(0,BANDEJA);
 
-      if (!sinEntregar.length) {
-        container.innerHTML = '<div id="waiting-msg">✅ Todas las tarjetas entregadas esta etapa.</div>';
-        return;
-      }
+      if (!sinEntregar.length) { container.innerHTML='<div id="waiting-msg">✅ Todas las tarjetas entregadas esta etapa.</div>'; return; }
 
-      const btnLabel = conMiEtiqueta.length
-        ? `📦 ENTREGAR (${conMiEtiqueta.length} lista${conMiEtiqueta.length>1?'s':''})`
-        : `📦 ENTREGAR — pega al menos 1 etiqueta primero`;
+      const btnLabel=conMiEtiqueta.length
+        ?`📦 ENTREGAR (${conMiEtiqueta.length} lista${conMiEtiqueta.length>1?'s':''})`
+        :`📦 ENTREGAR — pega al menos 1 etiqueta primero`;
 
-      let html = `<button class="btn-entregar" onclick="entregarLote()" ${conMiEtiqueta.length?'':'disabled'}>${btnLabel}</button>`;
-
+      let html=`<button class="btn-entregar" onclick="entregarLote()" ${conMiEtiqueta.length?'':'disabled'}>${btnLabel}</button>`;
       if (conMiEtiqueta.length) {
-        html += `<div style="font-size:0.7rem;color:#f0c040;margin-bottom:6px">📋 Listas para entregar</div>`;
-        html += conMiEtiqueta.map(id => renderTarjeta(id, tarjetasData[id], anteriorEntrego(tarjetasData[id], rol))).join('');
+        html+=`<div style="font-size:0.7rem;color:#f0c040;margin-bottom:6px">📋 Listas para entregar</div>`;
+        html+=conMiEtiqueta.map(id=>renderTarjeta(id,tarjetasData[id],anteriorEntrego(tarjetasData[id],rol))).join('');
       }
       if (enFabricacion.length) {
-        html += `<div style="font-size:0.7rem;color:#aaa;margin-bottom:6px;margin-top:4px">🔧 En fabricación</div>`;
-        html += enFabricacion.map(id => renderTarjeta(id, tarjetasData[id], anteriorEntrego(tarjetasData[id], rol))).join('');
+        html+=`<div style="font-size:0.7rem;color:#aaa;margin-bottom:6px;margin-top:4px">🔧 En fabricación</div>`;
+        html+=enFabricacion.map(id=>renderTarjeta(id,tarjetasData[id],anteriorEntrego(tarjetasData[id],rol))).join('');
       }
-      container.innerHTML = html;
+      container.innerHTML=html;
       setupDropZones();
     }
 
     function renderTarjeta(id, t, puedo) {
-      const misPosiciones = POSICIONES.filter(p => p.color === rol);
-      const yaEntregue    = !!t[`entregado_${rol}`];
-      const todasLlenas   = POSICIONES.every(p => t[p.id] !== undefined);
-      const estadoLabel = yaEntregue?'entregada':t.aprobada?'aprobada':t.rechazada?'rechazada':todasLlenas?'revision':'';
-      const estadoTxt   = yaEntregue?'📦 Entregada':t.aprobada?'✅ Aprobada':t.rechazada?'❌ Defecto':todasLlenas?'🔍 Revisión':'';
-      const filas = [0,1].map(row => {
-        const zonas = POSICIONES.filter(p=>p.row===row).map(pos => {
-          const pegada = t[pos.id];
-          if (pegada !== undefined) {
+      const misPosiciones=POSICIONES.filter(p=>p.color===rol);
+      const yaEntregue=!!t[`entregado_${rol}`];
+      const todasLlenas=POSICIONES.every(p=>t[p.id]!==undefined);
+      const estadoLabel=yaEntregue?'entregada':t.aprobada?'aprobada':t.rechazada?'rechazada':todasLlenas?'revision':'';
+      const estadoTxt=yaEntregue?'📦 Entregada':t.aprobada?'✅ Aprobada':t.rechazada?'❌ Defecto':todasLlenas?'🔍 Revisión':'';
+      const mostrarScore=scoreVisible();
+      const filas=[0,1].map(row=>{
+        const zonas=POSICIONES.filter(p=>p.row===row).map(pos=>{
+          const pegada=t[pos.id];
+          if (pegada!==undefined) {
+            // Score: solo visible en etapa 3
             const s=pegada.score||0, sc=s>=85?'perfect':s>=60?'ok':'bad';
-            return `<div class="drop-zone filled"><div class="etiqueta-pegada" style="background:${COLORES[pos.color]}">${(pegada.nombre||pos.color).substring(0,3).toUpperCase()}<span class="score-badge ${sc}">${s}%</span></div></div>`;
+            const scoreBadge=mostrarScore?`<span class="score-badge ${sc}">${s}%</span>`:'';
+            return `<div class="drop-zone filled"><div class="etiqueta-pegada" style="background:${COLORES[pos.color]}">${(pegada.nombre||pos.color).substring(0,3).toUpperCase()}${scoreBadge}</div></div>`;
           }
-          const esMio = pos.color===rol && puedo && !yaEntregue;
+          const esMio=pos.color===rol&&puedo&&!yaEntregue;
           return `<div class="drop-zone${esMio?' mia':''}" data-pos="${pos.id}" data-tid="${id}" style="${esMio?'border-color:'+COLORES[rol]+';':''}">${esMio?'<span style="color:'+COLORES[rol]+';font-size:0.55rem">drop</span>':''}</div>`;
         }).join('');
         return `<div class="etiqueta-fila">${zonas}</div>`;
       }).join('');
-      const meFalta  = misPosiciones.some(p => t[p.id] === undefined);
-      const bloqMsg  = !puedo?`<div style="font-size:0.72rem;color:#888;text-align:center;padding:6px 0">⏳ Esperando que ${ORDEN_TURNOS[ORDEN_TURNOS.indexOf(rol)-1]} entregue...</div>`:'';
-      const dragHtml = meFalta&&puedo&&!yaEntregue?`<div class="drag-area"><div class="da-label">Arrastra tu etiqueta ↓</div><div class="draggable-etiqueta" style="background:${COLORES[rol]}" draggable="true" data-tid="${id}" ontouchstart="touchStart(event)" ontouchmove="touchMove(event)" ontouchend="touchEnd(event)">${nombre.substring(0,4).toUpperCase()}</div></div>`:bloqMsg;
+      const meFalta=misPosiciones.some(p=>t[p.id]===undefined);
+      const bloqMsg=!puedo?`<div style="font-size:0.72rem;color:#888;text-align:center;padding:6px 0">⏳ Esperando que ${ORDEN_TURNOS[ORDEN_TURNOS.indexOf(rol)-1]} entregue...</div>`:'';
+      const dragHtml=meFalta&&puedo&&!yaEntregue?`<div class="drag-area"><div class="da-label">Arrastra tu etiqueta ↓</div><div class="draggable-etiqueta" style="background:${COLORES[rol]}" draggable="true" data-tid="${id}" ontouchstart="touchStart(event)" ontouchmove="touchMove(event)" ontouchend="touchEnd(event)">${nombre.substring(0,4).toUpperCase()}</div></div>`:bloqMsg;
       return `<div class="paper-card${yaEntregue?' entregada-card':''}" id="pc-${id}"><div class="card-header"><span class="card-num">TARJETA #${t.numero}</span><span class="card-logo">UA Lean</span>${estadoLabel?`<span class="card-estado ${estadoLabel}">${estadoTxt}</span>`:''}</div>${filas}${dragHtml}</div>`;
     }
 
-    window.entregarLote = async function() {
-      const ids = Object.keys(tarjetasData);
-      const misPosiciones = POSICIONES.filter(p => p.color === rol);
-      const aEntregar = ids.filter(id => {
-        const t = tarjetasData[id];
-        return !t[`entregado_${rol}`] && misPosiciones.some(p => t[p.id] !== undefined);
-      }).sort((a,b) => (tarjetasData[a].numero||0)-(tarjetasData[b].numero||0));
+    window.entregarLote=async function() {
+      const ids=Object.keys(tarjetasData);
+      const misPosiciones=POSICIONES.filter(p=>p.color===rol);
+      const aEntregar=ids.filter(id=>{
+        const t=tarjetasData[id];
+        return !t[`entregado_${rol}`]&&misPosiciones.some(p=>t[p.id]!==undefined);
+      }).sort((a,b)=>(tarjetasData[a].numero||0)-(tarjetasData[b].numero||0));
       if (!aEntregar.length) return;
-      const ts = Date.now();
-      const updates = {};
-      aEntregar.forEach(id => { updates[`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${id}/entregado_${rol}`] = ts; });
-      const snap = await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/wip`));
-      updates[`sesiones/${sesion}/equipos/${equipo}/metricas/wip`] = (snap.val()||0) + aEntregar.length;
-      await update(ref(db), updates);
+      const ts=Date.now();
+      const updates={};
+      aEntregar.forEach(id=>{updates[`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${id}/entregado_${rol}`]=ts;});
+      const snap=await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/wip`));
+      updates[`sesiones/${sesion}/equipos/${equipo}/metricas/wip`]=(snap.val()||0)+aEntregar.length;
+      await update(ref(db),updates);
       setStatus(`📦 ${aEntregar.length} tarjeta${aEntregar.length>1?'s':''} despachada${aEntregar.length>1?'s':''} ✅`);
     };
 
-    function renderCalidad(container, ids) {
-      const enRevision = ids.filter(id => { const t=tarjetasData[id]; return t.entregado_verde&&!t.aprobada&&!t.rechazada; });
-      if (!enRevision.length) { container.innerHTML='<div id="waiting-msg">🔍 Sin tarjetas en revisión aún...</div>'; return; }
-      const items = enRevision.map(id => {
-        const t=tarjetasData[id];
-        const allS=POSICIONES.map(p=>t[p.id]?.score||0);
-        const avg=Math.round(allS.reduce((a,b)=>a+b,0)/allS.length);
-        const cls=avg>=85?'#28a745':avg>=60?'#d29922':'#e94560';
-        return `<div class="calidad-item"><span>Tarjeta #${t.numero}</span><span class="score-pill" style="background:${cls};color:#fff">Score ${avg}%</span><div class="calidad-btns"><button class="btn-aprobar" onclick="decidirCalidad('${id}',true,${avg})">✅ OK</button><button class="btn-rechazar" onclick="decidirCalidad('${id}',false,${avg})">❌ NG</button></div></div>`;
-      }).join('');
-      container.innerHTML=`<div class="calidad-panel"><h3>🔍 En revisión (${enRevision.length})</h3>${items}</div>`;
-    }
-
-    window.decidirCalidad = async function(tarjetaId, aprobada, score) {
-      const path=`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${tarjetaId}`;
-      const updates={[`${path}/aprobada`]:aprobada,[`${path}/rechazada`]:!aprobada,[`${path}/scorePromedio`]:score};
-      const key=aprobada?'entregadas':'defectos';
-      const snap=await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/${key}`));
-      updates[`sesiones/${sesion}/equipos/${equipo}/metricas/${key}`]=(snap.val()||0)+1;
-      if (aprobada) { const ws=await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/wip`)); updates[`sesiones/${sesion}/equipos/${equipo}/metricas/wip`]=Math.max(0,(ws.val()||0)-1); }
-      await update(ref(db),updates);
-      setStatus(aprobada?'✅ Tarjeta aprobada':'❌ Defecto registrado');
-    };
-
-    function renderMaterialista(container, ids) {
-      const listos=ids.filter(id=>{ const t=tarjetasData[id]; return t.entregado_verde&&!t.aprobada&&!t.rechazada; });
-      container.innerHTML=listos.length?listos.map(id=>`<div class="paper-card"><div class="card-header"><span class="card-num">TARJETA #${tarjetasData[id].numero}</span><span class="card-estado revision">🔍 Lista para Calidad</span></div></div>`).join(''):'<div id="waiting-msg">📦 Sin lotes listos para mover aún...</div>';
-    }
-
     let dragTid=null;
     function setupDropZones() {
-      document.querySelectorAll('.draggable-etiqueta').forEach(el=>{ el.addEventListener('dragstart',e=>{ dragTid=el.dataset.tid; e.dataTransfer.effectAllowed='move'; }); });
+      document.querySelectorAll('.draggable-etiqueta').forEach(el=>{
+        el.addEventListener('dragstart',e=>{dragTid=el.dataset.tid;e.dataTransfer.effectAllowed='move';});
+      });
       document.querySelectorAll('.drop-zone.mia').forEach(zone=>{
-        zone.addEventListener('dragover',e=>{ e.preventDefault(); zone.classList.add('over'); });
+        zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('over');});
         zone.addEventListener('dragleave',()=>zone.classList.remove('over'));
-        zone.addEventListener('drop',e=>{ e.preventDefault(); zone.classList.remove('over'); pegarEtiqueta(zone.dataset.tid,zone.dataset.pos,e.clientX,e.clientY,zone); });
+        zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('over');pegarEtiqueta(zone.dataset.tid,zone.dataset.pos,e.clientX,e.clientY,zone);});
       });
     }
 
     const ghost=document.getElementById('drag-ghost');
-    window.touchStart=function(e){ dragTid=e.currentTarget.dataset.tid; ghost.style.background=COLORES[rol]; ghost.textContent=nombre.substring(0,4).toUpperCase(); ghost.style.display='flex'; };
-    window.touchMove=function(e){ e.preventDefault(); const t=e.touches[0]; ghost.style.left=t.clientX+'px'; ghost.style.top=t.clientY+'px'; document.querySelectorAll('.drop-zone.over').forEach(z=>z.classList.remove('over')); document.elementFromPoint(t.clientX,t.clientY)?.closest('.drop-zone.mia')?.classList.add('over'); };
-    window.touchEnd=function(e){ ghost.style.display='none'; const t=e.changedTouches[0]; document.querySelectorAll('.drop-zone.over').forEach(z=>z.classList.remove('over')); const zone=document.elementFromPoint(t.clientX,t.clientY)?.closest('.drop-zone.mia'); if(zone) pegarEtiqueta(zone.dataset.tid,zone.dataset.pos,t.clientX,t.clientY,zone); };
+    window.touchStart=function(e){dragTid=e.currentTarget.dataset.tid;ghost.style.background=COLORES[rol];ghost.textContent=nombre.substring(0,4).toUpperCase();ghost.style.display='flex';};
+    window.touchMove=function(e){e.preventDefault();const t=e.touches[0];ghost.style.left=t.clientX+'px';ghost.style.top=t.clientY+'px';document.querySelectorAll('.drop-zone.over').forEach(z=>z.classList.remove('over'));document.elementFromPoint(t.clientX,t.clientY)?.closest('.drop-zone.mia')?.classList.add('over');};
+    window.touchEnd=function(e){ghost.style.display='none';const t=e.changedTouches[0];document.querySelectorAll('.drop-zone.over').forEach(z=>z.classList.remove('over'));const zone=document.elementFromPoint(t.clientX,t.clientY)?.closest('.drop-zone.mia');if(zone)pegarEtiqueta(zone.dataset.tid,zone.dataset.pos,t.clientX,t.clientY,zone);};
 
     async function pegarEtiqueta(tarjetaId,posId,dropX,dropY,zoneEl) {
       const rect=zoneEl.getBoundingClientRect();
@@ -367,10 +323,15 @@
       else score=Math.max(0,Math.round(60-((dist-UMBRAL_MARGINAL)/20)*60));
       const path=`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${tarjetaId}`;
       await update(ref(db),{[`${path}/${posId}`]:{score,nombre,rol,ts:Date.now()}});
-      setStatus(`${score>=85?'🎯':score>=60?'⚠️':'💥'} Precisión: ${score}%`);
+      // Feedback de precisión: solo visible en etapa 3
+      if (precisionVisible()) {
+        setStatus(`${score>=85?'🎯':score>=60?'⚠️':'💥'} Precisión: ${score}%`);
+      } else {
+        setStatus('✅ Etiqueta pegada');
+      }
     }
 
-    function setStatus(msg) { document.getElementById('status-msg').textContent=msg; setTimeout(()=>document.getElementById('status-msg').textContent='',3000); }
+    function setStatus(msg){document.getElementById('status-msg').textContent=msg;setTimeout(()=>document.getElementById('status-msg').textContent='',3000);}
   </script>
 </body>
 </html>
