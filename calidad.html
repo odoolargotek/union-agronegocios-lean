@@ -29,14 +29,12 @@
     .metric .val { font-size:1.3rem; font-weight:700; color:#f0c040; }
     .metric .lbl { font-size:0.65rem; color:#888; }
     #status-msg { font-size:0.85rem; color:#6f42c1; text-align:center; min-height:18px; margin:4px 0 10px; }
-    /* Tarjeta de calidad */
     .insp-card { background:#fffef0; border-radius:10px; padding:14px; margin-bottom:12px;
                  color:#222; box-shadow:2px 3px 12px rgba(0,0,0,0.5); }
     .insp-header { display:flex; justify-content:space-between; align-items:center;
                    border-bottom:1px solid #ccc; padding-bottom:8px; margin-bottom:10px; flex-wrap:wrap; gap:6px; }
     .insp-num { font-size:0.85rem; font-weight:700; color:#333; }
     .insp-equipo { font-size:0.68rem; color:#888; }
-    /* Score visual por posicion */
     .pos-grid { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
     .pos-item { display:flex; flex-direction:column; align-items:center; gap:2px; }
     .pos-dot { width:44px; height:28px; border-radius:5px; display:flex; align-items:center;
@@ -44,14 +42,12 @@
                text-shadow:0 1px 2px rgba(0,0,0,0.5); }
     .pos-score { font-size:0.6rem; font-weight:700; }
     .pos-empty { background:#ddd; color:#999; font-size:0.55rem; }
-    /* Score promedio grande */
     .score-display { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
     .score-big { font-size:2rem; font-weight:900; }
     .score-bar-wrap { flex:1; }
     .score-bar-bg { background:#eee; border-radius:4px; height:8px; }
     .score-bar-fill { height:8px; border-radius:4px; transition:width 0.3s; }
     .score-label { font-size:0.68rem; color:#888; margin-top:3px; }
-    /* Decisión */
     .decision-btns { display:flex; gap:10px; }
     .btn-aprobar { flex:1; padding:12px; border-radius:8px; border:none; background:#28a745;
                    color:#fff; font-size:1rem; font-weight:700; cursor:pointer; }
@@ -64,7 +60,6 @@
     #waiting-msg { text-align:center; color:#aaa; padding:30px 10px; font-size:0.9rem; line-height:1.6; }
     .footer-brand { text-align:center; margin-top:24px; opacity:0.4; }
     .footer-brand img { height:14px; filter:brightness(0) invert(1); }
-    /* Colores por color de operario */
     .c-amarillo { background:#f5c518; }
     .c-naranja  { background:#e07800; }
     .c-rojo     { background:#e94560; }
@@ -134,6 +129,10 @@
     ];
     const COLORES = { amarillo:'#f5c518', naranja:'#e07800', rojo:'#e94560', verde:'#1a8a3a' };
 
+    // ── UMBRALES DE CALIFICACIÓN (deben coincidir con dinamica-tarjetas.html) ──
+    const SCORE_PERFECTO = 95;  // antes 85
+    const SCORE_MARGINAL = 70;  // antes 60
+
     let sesion, equipo, nombre, etapaActual=1, tarjetasData={};
 
     window.entrar = function() {
@@ -169,14 +168,10 @@
     function render() {
       const container = document.getElementById('tarjetas-container');
       const ids = Object.keys(tarjetasData);
-      // En cola: entregado_verde y sin decisión aún
-      // En etapa 1: también verificar que el materialista ya movió a calidad
       const enCola = ids.filter(id => {
         const t = tarjetasData[id];
         if (t.aprobada || t.rechazada) return false;
-        // Etapa 1: requiere que el materialista haya movido a calidad
         if (etapaActual === 1) return !!t.entregado_materialista_calidad;
-        // Etapas 2 y 3: basta con que verde haya entregado
         return !!t.entregado_verde;
       }).sort((a,b)=>(tarjetasData[a].numero||0)-(tarjetasData[b].numero||0));
 
@@ -192,12 +187,12 @@
         const scores = POSICIONES.map(p => ({ pos:p, data:t[p.id] }));
         const validos = scores.filter(s=>s.data?.score!==undefined).map(s=>s.data.score);
         const avg = validos.length ? Math.round(validos.reduce((a,b)=>a+b,0)/validos.length) : 0;
-        const scoreColor = avg>=85?'#28a745':avg>=60?'#d29922':'#e94560';
+        const scoreColor = avg>=SCORE_PERFECTO?'#28a745':avg>=SCORE_MARGINAL?'#d29922':'#e94560';
 
         const posDots = POSICIONES.map(p => {
           const d = t[p.id];
           if (!d) return `<div class="pos-item"><div class="pos-dot pos-empty">—</div><div class="pos-score" style="color:#ccc">—</div></div>`;
-          const s=d.score||0, sc=s>=85?'#28a745':s>=60?'#d29922':'#e94560';
+          const s=d.score||0, sc=s>=SCORE_PERFECTO?'#28a745':s>=SCORE_MARGINAL?'#d29922':'#e94560';
           return `<div class="pos-item">
             <div class="pos-dot c-${p.color}">${(d.nombre||p.color).substring(0,3).toUpperCase()}</div>
             <div class="pos-score" style="color:${sc}">${s}%</div>
@@ -215,7 +210,7 @@
             <div class="score-big" style="color:${scoreColor}">${avg}%</div>
             <div class="score-bar-wrap">
               <div class="score-bar-bg"><div class="score-bar-fill" style="width:${barW}%;background:${scoreColor}"></div></div>
-              <div class="score-label">${avg>=85?'✅ Excelente':avg>=60?'⚠️ Marginal':'❌ Defecto — rechazar'}</div>
+              <div class="score-label">${avg>=SCORE_PERFECTO?'✅ Excelente':avg>=SCORE_MARGINAL?'⚠️ Marginal':'❌ Defecto — rechazar'}</div>
             </div>
           </div>
           <div class="decision-btns">
