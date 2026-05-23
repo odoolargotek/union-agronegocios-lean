@@ -37,7 +37,7 @@
     .equipo-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
     .equipo-title { font-size:1rem; font-weight:700; color:#f0c040; }
     .online-count { font-size:0.72rem; background:#238636; color:#fff; border-radius:10px; padding:2px 8px; }
-    .eq-metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:10px; }
+    .eq-metrics { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-bottom:10px; }
     .eq-metric { background:#0d1117; border-radius:6px; padding:6px; text-align:center; }
     .eq-metric .val { font-size:1.1rem; font-weight:700; color:#58a6ff; }
     .eq-metric .lbl { font-size:0.6rem; color:#888; margin-top:1px; }
@@ -97,7 +97,6 @@
     .vsm-legend { display:flex; gap:14px; flex-wrap:wrap; }
     .vsm-leg-item { display:flex; align-items:center; gap:5px; font-size:0.72rem; color:#aaa; }
     .vsm-leg-dot { width:10px; height:10px; border-radius:2px; }
-
     .vsm-etapa-block { background:#161b22; border:1px solid #30363d; border-radius:12px;
                        padding:18px 20px; margin-bottom:20px; }
     .vsm-etapa-title { font-size:0.88rem; font-weight:700; margin-bottom:16px;
@@ -107,7 +106,6 @@
                      font-size:0.85rem; font-weight:900; color:#fff; }
     .vsm-etapa-num.e2 { background:#d29922; }
     .vsm-etapa-num.e3 { background:#28a745; }
-
     .vsm-flow { display:flex; align-items:flex-start; gap:0; overflow-x:auto; padding-bottom:8px; }
     .vsm-node { display:flex; flex-direction:column; align-items:center; min-width:90px; }
     .vsm-box { background:#0d1117; border:1px solid #30363d; border-radius:8px;
@@ -122,19 +120,16 @@
     .vsm-wip-bubble { background:#f0c04022; border:1px solid #f0c04066;
                       color:#f0c040; border-radius:20px; font-size:0.6rem;
                       font-weight:700; padding:2px 6px; margin-top:3px; white-space:nowrap; }
-
     .vsm-kpis { display:grid; grid-template-columns:repeat(auto-fill,minmax(100px,1fr));
                 gap:8px; margin-top:16px; }
     .vsm-kpi { background:#0d1117; border-radius:8px; padding:8px; text-align:center; }
     .vsm-kpi .kval { font-size:1.2rem; font-weight:900; }
     .vsm-kpi .klbl { font-size:0.6rem; color:#888; margin-top:2px; }
-
     .vsm-eff-bar-wrap { margin-top:14px; }
     .vsm-eff-label { font-size:0.7rem; color:#aaa; margin-bottom:5px;
                      display:flex; justify-content:space-between; }
     .vsm-eff-track { height:10px; background:#21262d; border-radius:5px; overflow:hidden; }
     .vsm-eff-fill  { height:10px; border-radius:5px; transition: width 0.5s; }
-
     .vsm-compare-table { width:100%; border-collapse:collapse; font-size:0.8rem; margin-top:8px; }
     .vsm-compare-table th { text-align:left; padding:8px 12px; font-size:0.7rem;
                              color:#aaa; border-bottom:1px solid #30363d; }
@@ -185,6 +180,7 @@
     <div class="gm"><div class="val" id="g-entregadas">0</div><div class="lbl">Entregadas</div></div>
     <div class="gm"><div class="val" id="g-wip">0</div><div class="lbl">WIP</div></div>
     <div class="gm"><div class="val" id="g-defectos">0</div><div class="lbl">Defectos</div></div>
+    <div class="gm"><div class="val" id="g-correcciones" style="color:#d29922">0</div><div class="lbl">Correcciones</div></div>
     <div class="gm"><div class="val" id="g-score">—</div><div class="lbl">Score prom.</div></div>
     <div class="gm"><div class="val" id="g-jugadores">0</div><div class="lbl">Online</div></div>
     <div class="gm"><div class="val" id="g-lt">—</div><div class="lbl">Lead Time prom.</div></div>
@@ -278,7 +274,8 @@
       const removes = [];
       for (let eq=1;eq<=6;eq++) {
         removes.push(remove(ref(db,`sesiones/${sesion}/equipos/${eq}/etapas/${etapaActual}`)));
-        removes.push(set(ref(db,`sesiones/${sesion}/equipos/${eq}/metricas`),{entregadas:0,wip:0,defectos:0}));
+        removes.push(set(ref(db,`sesiones/${sesion}/equipos/${eq}/metricas`),
+          {entregadas:0, wip:0, defectos:0, correcciones:0}));
       }
       await Promise.all(removes);
       const updates={};
@@ -295,20 +292,18 @@
       alert(`✅ Etapa ${etapaActual} iniciada con ${n} tarjetas.`);
     };
 
-    // ── RESET: borra Firebase Y limpia todo el DOM ──
     window.resetSesion = async function() {
       if (!sesion) return;
       if (!confirm('¿Resetear toda la sesión?')) return;
       await remove(ref(db,`sesiones/${sesion}`));
-      // Limpiar métricas globales
       document.getElementById('g-etapa').textContent      = '—';
       document.getElementById('g-entregadas').textContent = '0';
       document.getElementById('g-wip').textContent        = '0';
       document.getElementById('g-defectos').textContent   = '0';
+      document.getElementById('g-correcciones').textContent = '0';
       document.getElementById('g-score').textContent      = '—';
       document.getElementById('g-jugadores').textContent  = '0';
       document.getElementById('g-lt').textContent         = '—';
-      // Limpiar paneles
       document.getElementById('equipos-grid').innerHTML    = '<p style="color:#888">Sesión reseteada.</p>';
       document.getElementById('tiempos-section').innerHTML = '<p style="color:#888">Sesión reseteada.</p>';
       document.getElementById('vsm-section').innerHTML     = '<p style="color:#888">Sesión reseteada.</p>';
@@ -321,7 +316,6 @@
       await set(mRef,(snap.val()||0)+1);
     };
 
-    // ── UTILS ──
     function fmt(ms) {
       if (ms === null || ms === undefined) return '—';
       const s = Math.round(ms/1000);
@@ -364,19 +358,17 @@
       let allEspera = { amarillo:[], naranja:[], rojo:[], verde:[] };
       let allWIP = [];
       let allLT = [];
-      let totalEntregadas = 0, totalDefectos = 0;
+      let totalEntregadas = 0, totalDefectos = 0, totalCorrecciones = 0;
 
       for (let eq=1; eq<=6; eq++) {
         const tarjetas = ((equipos[eq]||{}).etapas||{})[etapa]?.tarjetas||{};
         const tVals = Object.values(tarjetas);
         if (!tVals.length) continue;
-
         const wip = tVals.filter(t => POSICIONES.some(p=>t[p.id]!==undefined) && !t.aprobada).length;
         allWIP.push(wip);
-
-        totalEntregadas += (equipos[eq]?.metricas?.entregadas||0);
-        totalDefectos   += (equipos[eq]?.metricas?.defectos||0);
-
+        totalEntregadas   += (equipos[eq]?.metricas?.entregadas||0);
+        totalDefectos     += (equipos[eq]?.metricas?.defectos||0);
+        totalCorrecciones += (equipos[eq]?.metricas?.correcciones||0);
         tVals.forEach(t => {
           const tt = calcTiemposTarjeta(t);
           if (tt.leadTime) allLT.push(tt.leadTime);
@@ -388,22 +380,18 @@
       }
 
       const avg = arr => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : null;
-
-      const ct = {};
-      const espera = {};
+      const ct = {}, espera = {};
       ORDEN.forEach(c => { ct[c] = avg(allCT[c]); espera[c] = avg(allEspera[c]); });
-
       const ltProm = avg(allLT);
       const wipProm = avg(allWIP);
-
-      const tva = ORDEN.reduce((s,c) => s + (ct[c]||0), 0);
+      const tva  = ORDEN.reduce((s,c) => s + (ct[c]||0), 0);
       const tNVA = ORDEN.reduce((s,c) => s + (espera[c]||0), 0);
       const eficiencia = (tva + tNVA) > 0 ? Math.round(tva / (tva + tNVA) * 100) : null;
-
       const defRate = (totalEntregadas + totalDefectos) > 0
         ? Math.round(totalDefectos / (totalEntregadas + totalDefectos) * 100) : null;
 
-      return { ct, espera, ltProm, wipProm, tva, tNVA, eficiencia, totalEntregadas, totalDefectos, defRate };
+      return { ct, espera, ltProm, wipProm, tva, tNVA, eficiencia,
+               totalEntregadas, totalDefectos, totalCorrecciones, defRate };
     }
 
     function vsmNodeColor(color) { return COLORES[color] || '#888'; }
@@ -411,9 +399,9 @@
     function renderVSM(data) {
       const etapaActiva = data.etapaActiva||1;
       const etapaNames = {
-        1: { label:'Etapa 1', sub:'Producción libre — lotes variables', cls:'', nota:'⚠️ Estado actual (sin Lean)' },
-        2: { label:'Etapa 2', sub:'Lote de 2 tarjetas', cls:'e2', nota:'📦 Primera mejora' },
-        3: { label:'Etapa 3', sub:'Flujo unitario — one-piece-flow', cls:'e3', nota:'✅ Lean puro' }
+        1: { label:'Etapa 1', sub:'Producción libre — lotes variables', cls:'',   nota:'⚠️ Estado actual (sin Lean)' },
+        2: { label:'Etapa 2', sub:'Lote de 2 tarjetas',                 cls:'e2', nota:'📦 Primera mejora' },
+        3: { label:'Etapa 3', sub:'Flujo unitario — one-piece-flow',    cls:'e3', nota:'✅ Lean puro' }
       };
 
       const vsmData = {};
@@ -421,10 +409,11 @@
 
       let compareRows = '';
       const metricas = [
-        { lbl: 'Lead Time promedio', key: 'ltProm', fmt: fmt, mejorEs: 'menor' },
-        { lbl: 'WIP promedio',       key: 'wipProm', fmt: v => v!=null?v+'u':'—', mejorEs: 'menor' },
-        { lbl: 'Eficiencia flujo',   key: 'eficiencia', fmt: v => v!=null?v+'%':'—', mejorEs: 'mayor' },
-        { lbl: 'Tasa de defectos',   key: 'defRate', fmt: v => v!=null?v+'%':'—', mejorEs: 'menor' },
+        { lbl: 'Lead Time promedio',    key: 'ltProm',            fmt: fmt,                              mejorEs: 'menor' },
+        { lbl: 'WIP promedio',          key: 'wipProm',           fmt: v => v!=null?v+'u':'—',           mejorEs: 'menor' },
+        { lbl: 'Eficiencia flujo',      key: 'eficiencia',        fmt: v => v!=null?v+'%':'—',           mejorEs: 'mayor' },
+        { lbl: 'Tasa de defectos',      key: 'defRate',           fmt: v => v!=null?v+'%':'—',           mejorEs: 'menor' },
+        { lbl: 'Correcciones totales',  key: 'totalCorrecciones', fmt: v => v!=null?v+'':'—',            mejorEs: 'menor' },
       ];
 
       metricas.forEach(m => {
@@ -462,16 +451,16 @@
 
       let etapasHTML = '';
       for (let e=1; e<=3; e++) {
-        const d = vsmData[e];
+        const d    = vsmData[e];
         const info = etapaNames[e];
         const hasData = d.totalEntregadas > 0 || ORDEN.some(c => d.ct[c] !== null);
 
         const nodes = ORDEN.map((color, idx) => {
-          const ct = d.ct[color];
-          const esp = d.espera[color];
+          const ct      = d.ct[color];
+          const esp     = d.espera[color];
           const nodeColor = vsmNodeColor(color);
-          const ctStr = ct ? fmt(ct) : '—';
-          const espStr = esp ? fmt(esp) : '—';
+          const ctStr   = ct  ? fmt(ct)  : '—';
+          const espStr  = esp ? fmt(esp) : '—';
           const conn = idx < ORDEN.length - 1 ? `
             <div class="vsm-conn">
               <div class="vsm-arrow">→</div>
@@ -488,9 +477,9 @@
           return node + conn;
         }).join('');
 
-        const eff = d.eficiencia;
+        const eff      = d.eficiencia;
         const effColor = eff===null?'#444':eff>=50?'#28a745':eff>=25?'#d29922':'#e94560';
-        const effHTML = `
+        const effHTML  = `
           <div class="vsm-eff-bar-wrap">
             <div class="vsm-eff-label">
               <span>Eficiencia del flujo (VA / Total)</span>
@@ -501,6 +490,7 @@
             </div>
           </div>`;
 
+        const corrColor = d.totalCorrecciones > 0 ? '#d29922' : '#444';
         const kpisHTML = `
           <div class="vsm-kpis">
             <div class="vsm-kpi"><div class="kval" style="color:#28a745">${fmt(d.tva)}</div><div class="klbl">⚡ Tiempo VA</div></div>
@@ -509,6 +499,7 @@
             <div class="vsm-kpi"><div class="kval" style="color:#f0c040">${d.wipProm!=null?d.wipProm+'u':'—'}</div><div class="klbl">📦 WIP prom.</div></div>
             <div class="vsm-kpi"><div class="kval" style="color:#e94560">${d.defRate!=null?d.defRate+'%':'—'}</div><div class="klbl">💥 Tasa defectos</div></div>
             <div class="vsm-kpi"><div class="kval" style="color:#28a745">${d.totalEntregadas}</div><div class="klbl">✅ Entregadas</div></div>
+            <div class="vsm-kpi"><div class="kval" style="color:${corrColor}">${d.totalCorrecciones}</div><div class="klbl">🔄 Correcciones</div></div>
           </div>`;
 
         const activeBadge = e === etapaActiva
@@ -537,6 +528,7 @@
             <div class="vsm-leg-item"><div class="vsm-leg-dot" style="background:#58a6ff"></div> Espera / NVA</div>
             <div class="vsm-leg-item"><div class="vsm-leg-dot" style="background:#f0c040"></div> WIP / Lead Time</div>
             <div class="vsm-leg-item"><div class="vsm-leg-dot" style="background:#e94560"></div> Defectos</div>
+            <div class="vsm-leg-item"><div class="vsm-leg-dot" style="background:#d29922"></div> Correcciones</div>
           </div>
         </div>
         ${compareHTML}${etapasHTML}`;
@@ -573,7 +565,7 @@
           };
         });
 
-        const ltArr = filas.map(f=>f.tt.leadTime).filter(Boolean);
+        const ltArr  = filas.map(f=>f.tt.leadTime).filter(Boolean);
         const ltProm = ltArr.length ? Math.round(ltArr.reduce((a,b)=>a+b,0)/ltArr.length) : null;
         if (ltProm) allLeadTimes.push(ltProm);
 
@@ -593,16 +585,16 @@
         ).join('');
 
         const tbodyRows = filas.map(({t, tt}) => {
-          const ltMs = tt.leadTime;
+          const ltMs  = tt.leadTime;
           const ltCls = !ltMs ? '' : ltMs<30000 ? 'lt-fast' : ltMs<90000 ? 'lt-mid' : 'lt-slow';
-          const cols = ORDEN.map(color => {
+          const cols  = ORDEN.map(color => {
             const e  = tt[color].ejec;
             const es = tt[color].espera;
-            const totalMs = (e||0)+(es||0);
+            const totalMs  = (e||0)+(es||0);
             const ejecPct  = totalMs ? Math.round((e||0)/totalMs*100) : 50;
             const waitPct  = 100-ejecPct;
             return `<td>
-              <div>${e  ? `<span class="${tClass(e)}">${fmt(e)}</span>` : '<span class="t-na">—</span>'}</div>
+              <div>${e ? `<span class="${tClass(e)}">${fmt(e)}</span>` : '<span class="t-na">—</span>'}</div>
               <div class="t-wait" style="font-size:0.62rem">${es ? fmt(es) : ''}</div>
               ${e||es ? `<div class="t-bar" title="Verde=ejec / Azul=espera">
                 <div class="t-bar-ejec" style="width:${ejecPct}%"></div>
@@ -642,9 +634,9 @@
 
     // ── PRODUCCIÓN ──
     function calcWIP(tarjetas) {
-      return Object.values(tarjetas).filter(t => {
-        return POSICIONES.some(p => t[p.id] !== undefined) && !t.aprobada;
-      }).length;
+      return Object.values(tarjetas).filter(t =>
+        POSICIONES.some(p => t[p.id] !== undefined) && !t.aprobada
+      ).length;
     }
 
     function calcProgresoPipeline(tarjetas) {
@@ -664,18 +656,19 @@
       const etapa   = data.etapaActiva||1;
       document.getElementById('g-etapa').textContent = ETAPA_NOMBRE[etapa]||'—';
 
-      let totEnt=0, totWip=0, totDef=0, totJug=0, scores=[], html='';
+      let totEnt=0, totWip=0, totDef=0, totCorr=0, totJug=0, scores=[], html='';
 
       for (let eq=1;eq<=6;eq++) {
-        const eqData    = equipos[eq]||{};
-        const jugadores = eqData.jugadores||{};
-        const metricas  = eqData.metricas||{};
-        const tarjetas  = ((eqData.etapas||{})[etapa]||{}).tarjetas||{};
-        const nJug      = Object.keys(jugadores).length;
-        const wipReal   = calcWIP(tarjetas);
-        const entregadas= metricas.entregadas||0;
-        const defectos  = metricas.defectos||0;
-        const pipeline  = calcProgresoPipeline(tarjetas);
+        const eqData     = equipos[eq]||{};
+        const jugadores  = eqData.jugadores||{};
+        const metricas   = eqData.metricas||{};
+        const tarjetas   = ((eqData.etapas||{})[etapa]||{}).tarjetas||{};
+        const nJug       = Object.keys(jugadores).length;
+        const wipReal    = calcWIP(tarjetas);
+        const entregadas = metricas.entregadas||0;
+        const defectos   = metricas.defectos||0;
+        const correcciones = metricas.correcciones||0;
+        const pipeline   = calcProgresoPipeline(tarjetas);
 
         const allScores = Object.values(tarjetas).flatMap(t =>
           POSICIONES.map(p => t[p.id]?.score).filter(s=>s!==undefined)
@@ -683,7 +676,7 @@
         const avgScore = allScores.length ? Math.round(allScores.reduce((a,b)=>a+b,0)/allScores.length) : null;
         if (avgScore!==null) scores.push(avgScore);
 
-        totEnt+=entregadas; totWip+=wipReal; totDef+=defectos; totJug+=nJug;
+        totEnt+=entregadas; totWip+=wipReal; totDef+=defectos; totCorr+=correcciones; totJug+=nJug;
 
         let tarjetasHtml = '';
         Object.values(tarjetas).slice(0,40).forEach(t => {
@@ -718,6 +711,7 @@
             <div class="eq-metric"><div class="val">${entregadas}</div><div class="lbl">Entregadas</div></div>
             <div class="eq-metric"><div class="val" style="color:#f0c040">${wipReal}</div><div class="lbl">WIP</div></div>
             <div class="eq-metric"><div class="val" style="color:#e94560">${defectos}</div><div class="lbl">Defectos</div></div>
+            <div class="eq-metric"><div class="val" style="color:#d29922">${correcciones}</div><div class="lbl">Correcciones</div></div>
             <div class="eq-metric"><div class="val" style="color:${scoreColor}">${avgScore!==null?avgScore+'%':'—'}</div><div class="lbl">Score</div></div>
           </div>
           <div class="pipeline">${pipeHtml}</div>
@@ -728,11 +722,12 @@
       }
 
       document.getElementById('equipos-grid').innerHTML = html;
-      document.getElementById('g-entregadas').textContent = totEnt;
-      document.getElementById('g-wip').textContent        = totWip;
-      document.getElementById('g-defectos').textContent   = totDef;
-      document.getElementById('g-jugadores').textContent  = totJug;
-      document.getElementById('g-score').textContent      = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length)+'%' : '—';
+      document.getElementById('g-entregadas').textContent   = totEnt;
+      document.getElementById('g-wip').textContent          = totWip;
+      document.getElementById('g-defectos').textContent     = totDef;
+      document.getElementById('g-correcciones').textContent = totCorr;
+      document.getElementById('g-jugadores').textContent    = totJug;
+      document.getElementById('g-score').textContent        = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length)+'%' : '—';
     }
   </script>
 </body>
