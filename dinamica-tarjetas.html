@@ -217,7 +217,6 @@
       const cfg=LOTE_CONFIG[etapaActual]||LOTE_CONFIG[1];
       document.getElementById('stage-info').textContent = cfg.nombre;
       document.getElementById('lote-info').innerHTML    = cfg.desc;
-      // Mostrar métrica Correcciones solo en etapa 3
       const row = document.getElementById('metrics-row');
       if (etapaActual >= 3) {
         if (!document.getElementById('m-correcciones')) {
@@ -334,7 +333,6 @@
             const s  = pegada.score||0;
             const sc = s>=SCORE_PERFECTO?'perfect':s>=SCORE_MARGINAL?'ok':'bad';
             const scoreBadge = mostrarScore ? `<span class="score-badge ${sc}">${s}%</span>` : '';
-            // En etapa 3, si es mía y el score no es perfecto, habilitar re-drop
             const esCorregible = puedeCorregir() && esMio && s < SCORE_PERFECTO;
             const claseZona = esCorregible ? 'drop-zone corregible' : 'drop-zone filled';
             const dataAttrs = esCorregible ? `data-pos="${pos.id}" data-tid="${id}" data-correccion="1"` : '';
@@ -353,12 +351,11 @@
       }).join('');
 
       const meFalta = misPosiciones.some(p => t[p.id] === undefined);
-      // En etapa 3 mostrar drag-area también si hay corregibles
       const hayCorregibles = puedeCorregir() && puedo && !yaEnvie &&
         misPosiciones.some(p => t[p.id] !== undefined && (t[p.id].score||0) < SCORE_PERFECTO);
       const dragHtml = (meFalta || hayCorregibles) && puedo && !yaEnvie
         ? `<div class="drag-area">
-             <div class="da-label">${meFalta ? 'Arrastra tu etiqueta ↓' : '🔄 Re-arrastra para corregir ↓'}</div>
+             <div class="da-label">${meFalta ? 'Arrastra tu etiqueta ↓' : '🔄 Vuelve a colocar la etiqueta si deseas mejorar ↓'}</div>
              <div class="draggable-etiqueta" style="background:${COLORES[rol]}" draggable="true" data-tid="${id}"
                   ontouchstart="touchStart(event)" ontouchmove="touchMove(event)" ontouchend="touchEnd(event)">
                ${nombre.substring(0,4).toUpperCase()}
@@ -414,7 +411,6 @@
       document.querySelectorAll('.draggable-etiqueta').forEach(el => {
         el.addEventListener('dragstart', e => { dragTid=el.dataset.tid; e.dataTransfer.effectAllowed='move'; });
       });
-      // Zonas vacías (mia) y corregibles
       document.querySelectorAll('.drop-zone.mia, .drop-zone.corregible').forEach(zone => {
         zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('over'); });
         zone.addEventListener('dragleave', () => zone.classList.remove('over'));
@@ -462,7 +458,6 @@
       const path=`sesiones/${sesion}/equipos/${equipo}/etapas/${etapaActual}/tarjetas/${tarjetaId}`;
       const updates = { [`${path}/${posId}`]: { score, nombre, rol, ts: Date.now() } };
 
-      // Si es corrección, sumar al contador de correcciones
       if (esCorreccion) {
         const snapCorr = await get(ref(db,`sesiones/${sesion}/equipos/${equipo}/metricas/correcciones`));
         updates[`sesiones/${sesion}/equipos/${equipo}/metricas/correcciones`] = (snapCorr.val()||0) + 1;
