@@ -98,7 +98,6 @@
     .vsm-leg-item { display:flex; align-items:center; gap:5px; font-size:0.72rem; color:#aaa; }
     .vsm-leg-dot { width:10px; height:10px; border-radius:2px; }
 
-    /* Fila de comparación por etapa */
     .vsm-etapa-block { background:#161b22; border:1px solid #30363d; border-radius:12px;
                        padding:18px 20px; margin-bottom:20px; }
     .vsm-etapa-title { font-size:0.88rem; font-weight:700; margin-bottom:16px;
@@ -109,7 +108,6 @@
     .vsm-etapa-num.e2 { background:#d29922; }
     .vsm-etapa-num.e3 { background:#28a745; }
 
-    /* Flujo de proceso VSM */
     .vsm-flow { display:flex; align-items:flex-start; gap:0; overflow-x:auto; padding-bottom:8px; }
     .vsm-node { display:flex; flex-direction:column; align-items:center; min-width:90px; }
     .vsm-box { background:#0d1117; border:1px solid #30363d; border-radius:8px;
@@ -125,21 +123,18 @@
                       color:#f0c040; border-radius:20px; font-size:0.6rem;
                       font-weight:700; padding:2px 6px; margin-top:3px; white-space:nowrap; }
 
-    /* KPI bar debajo del flujo */
     .vsm-kpis { display:grid; grid-template-columns:repeat(auto-fill,minmax(100px,1fr));
                 gap:8px; margin-top:16px; }
     .vsm-kpi { background:#0d1117; border-radius:8px; padding:8px; text-align:center; }
     .vsm-kpi .kval { font-size:1.2rem; font-weight:900; }
     .vsm-kpi .klbl { font-size:0.6rem; color:#888; margin-top:2px; }
 
-    /* Barra de eficiencia del flujo */
     .vsm-eff-bar-wrap { margin-top:14px; }
     .vsm-eff-label { font-size:0.7rem; color:#aaa; margin-bottom:5px;
                      display:flex; justify-content:space-between; }
     .vsm-eff-track { height:10px; background:#21262d; border-radius:5px; overflow:hidden; }
     .vsm-eff-fill  { height:10px; border-radius:5px; transition: width 0.5s; }
 
-    /* Tabla comparativa inter-etapas */
     .vsm-compare-table { width:100%; border-collapse:collapse; font-size:0.8rem; margin-top:8px; }
     .vsm-compare-table th { text-align:left; padding:8px 12px; font-size:0.7rem;
                              color:#aaa; border-bottom:1px solid #30363d; }
@@ -300,13 +295,24 @@
       alert(`✅ Etapa ${etapaActual} iniciada con ${n} tarjetas.`);
     };
 
+    // ── RESET: borra Firebase Y limpia todo el DOM ──
     window.resetSesion = async function() {
       if (!sesion) return;
       if (!confirm('¿Resetear toda la sesión?')) return;
       await remove(ref(db,`sesiones/${sesion}`));
-      document.getElementById('equipos-grid').innerHTML='<p style="color:#888">Sesión reseteada.</p>';
-      document.getElementById('tiempos-section').innerHTML='<p style="color:#888">Sesión reseteada.</p>';
-      document.getElementById('vsm-section').innerHTML='<p style="color:#888">Sesión reseteada.</p>';
+      // Limpiar métricas globales
+      document.getElementById('g-etapa').textContent      = '—';
+      document.getElementById('g-entregadas').textContent = '0';
+      document.getElementById('g-wip').textContent        = '0';
+      document.getElementById('g-defectos').textContent   = '0';
+      document.getElementById('g-score').textContent      = '—';
+      document.getElementById('g-jugadores').textContent  = '0';
+      document.getElementById('g-lt').textContent         = '—';
+      // Limpiar paneles
+      document.getElementById('equipos-grid').innerHTML    = '<p style="color:#888">Sesión reseteada.</p>';
+      document.getElementById('tiempos-section').innerHTML = '<p style="color:#888">Sesión reseteada.</p>';
+      document.getElementById('vsm-section').innerHTML     = '<p style="color:#888">Sesión reseteada.</p>';
+      globalData = {};
     };
 
     window.registrarDefecto = async function(eq) {
@@ -365,7 +371,6 @@
         const tVals = Object.values(tarjetas);
         if (!tVals.length) continue;
 
-        // WIP instantáneo
         const wip = tVals.filter(t => POSICIONES.some(p=>t[p.id]!==undefined) && !t.aprobada).length;
         allWIP.push(wip);
 
@@ -391,9 +396,7 @@
       const ltProm = avg(allLT);
       const wipProm = avg(allWIP);
 
-      // Tiempo de valor agregado = suma CT operarios
       const tva = ORDEN.reduce((s,c) => s + (ct[c]||0), 0);
-      // Tiempo de espera total = suma esperas
       const tNVA = ORDEN.reduce((s,c) => s + (espera[c]||0), 0);
       const eficiencia = (tva + tNVA) > 0 ? Math.round(tva / (tva + tNVA) * 100) : null;
 
@@ -403,9 +406,7 @@
       return { ct, espera, ltProm, wipProm, tva, tNVA, eficiencia, totalEntregadas, totalDefectos, defRate };
     }
 
-    function vsmNodeColor(color) {
-      return COLORES[color] || '#888';
-    }
+    function vsmNodeColor(color) { return COLORES[color] || '#888'; }
 
     function renderVSM(data) {
       const etapaActiva = data.etapaActiva||1;
@@ -415,11 +416,9 @@
         3: { label:'Etapa 3', sub:'Flujo unitario — one-piece-flow', cls:'e3', nota:'✅ Lean puro' }
       };
 
-      // Calculamos datos para las 3 etapas
       const vsmData = {};
       for (let e=1; e<=3; e++) vsmData[e] = calcVSMEtapa(data, e);
 
-      // ── Comparativa global ──
       let compareRows = '';
       const metricas = [
         { lbl: 'Lead Time promedio', key: 'ltProm', fmt: fmt, mejorEs: 'menor' },
@@ -432,7 +431,6 @@
         const vals = [vsmData[1][m.key], vsmData[2][m.key], vsmData[3][m.key]];
         const cells = vals.map((v, idx) => {
           if (v === null) return `<td class="vsm-pending">pendiente</td>`;
-          // comparar con etapa anterior
           const prev = idx > 0 ? vals[idx-1] : null;
           let cls = 'vsm-neutral';
           if (prev !== null && v !== null) {
@@ -462,14 +460,12 @@
           </div>
         </div>`;
 
-      // ── Una sección VSM por etapa ──
       let etapasHTML = '';
       for (let e=1; e<=3; e++) {
         const d = vsmData[e];
         const info = etapaNames[e];
         const hasData = d.totalEntregadas > 0 || ORDEN.some(c => d.ct[c] !== null);
 
-        // Flujo de procesos
         const nodes = ORDEN.map((color, idx) => {
           const ct = d.ct[color];
           const esp = d.espera[color];
@@ -492,7 +488,6 @@
           return node + conn;
         }).join('');
 
-        // Barra de eficiencia
         const eff = d.eficiencia;
         const effColor = eff===null?'#444':eff>=50?'#28a745':eff>=25?'#d29922':'#e94560';
         const effHTML = `
@@ -506,33 +501,14 @@
             </div>
           </div>`;
 
-        // KPIs de la etapa
         const kpisHTML = `
           <div class="vsm-kpis">
-            <div class="vsm-kpi">
-              <div class="kval" style="color:#28a745">${fmt(d.tva)}</div>
-              <div class="klbl">⚡ Tiempo VA</div>
-            </div>
-            <div class="vsm-kpi">
-              <div class="kval" style="color:#58a6ff">${fmt(d.tNVA)}</div>
-              <div class="klbl">⏳ Tiempo NVA (esperas)</div>
-            </div>
-            <div class="vsm-kpi">
-              <div class="kval" style="color:#f0c040">${fmt(d.ltProm)}</div>
-              <div class="klbl">🏁 Lead Time prom.</div>
-            </div>
-            <div class="vsm-kpi">
-              <div class="kval" style="color:#f0c040">${d.wipProm!=null?d.wipProm+'u':'—'}</div>
-              <div class="klbl">📦 WIP prom.</div>
-            </div>
-            <div class="vsm-kpi">
-              <div class="kval" style="color:#e94560">${d.defRate!=null?d.defRate+'%':'—'}</div>
-              <div class="klbl">💥 Tasa defectos</div>
-            </div>
-            <div class="vsm-kpi">
-              <div class="kval" style="color:#28a745">${d.totalEntregadas}</div>
-              <div class="klbl">✅ Entregadas</div>
-            </div>
+            <div class="vsm-kpi"><div class="kval" style="color:#28a745">${fmt(d.tva)}</div><div class="klbl">⚡ Tiempo VA</div></div>
+            <div class="vsm-kpi"><div class="kval" style="color:#58a6ff">${fmt(d.tNVA)}</div><div class="klbl">⏳ Tiempo NVA (esperas)</div></div>
+            <div class="vsm-kpi"><div class="kval" style="color:#f0c040">${fmt(d.ltProm)}</div><div class="klbl">🏁 Lead Time prom.</div></div>
+            <div class="vsm-kpi"><div class="kval" style="color:#f0c040">${d.wipProm!=null?d.wipProm+'u':'—'}</div><div class="klbl">📦 WIP prom.</div></div>
+            <div class="vsm-kpi"><div class="kval" style="color:#e94560">${d.defRate!=null?d.defRate+'%':'—'}</div><div class="klbl">💥 Tasa defectos</div></div>
+            <div class="vsm-kpi"><div class="kval" style="color:#28a745">${d.totalEntregadas}</div><div class="klbl">✅ Entregadas</div></div>
           </div>`;
 
         const activeBadge = e === etapaActiva
@@ -547,11 +523,8 @@
               <span style="margin-left:auto;font-size:0.72rem;color:#888">${info.nota}</span>
             </div>
             ${hasData ? `
-              <div style="overflow-x:auto;margin-bottom:14px;">
-                <div class="vsm-flow" style="min-width:420px;">${nodes}</div>
-              </div>
-              ${kpisHTML}
-              ${effHTML}
+              <div style="overflow-x:auto;margin-bottom:14px;"><div class="vsm-flow" style="min-width:420px;">${nodes}</div></div>
+              ${kpisHTML}${effHTML}
             ` : `<p style="color:#555;font-size:0.82rem;padding:10px 0">Sin datos aún — esta etapa no ha sido corrida.</p>`}
           </div>`;
       }
@@ -566,8 +539,7 @@
             <div class="vsm-leg-item"><div class="vsm-leg-dot" style="background:#e94560"></div> Defectos</div>
           </div>
         </div>
-        ${compareHTML}
-        ${etapasHTML}`;
+        ${compareHTML}${etapasHTML}`;
 
       document.getElementById('vsm-section').innerHTML = html;
     }
@@ -663,6 +635,8 @@
       if (allLeadTimes.length) {
         const ltGlobal = Math.round(allLeadTimes.reduce((a,b)=>a+b,0)/allLeadTimes.length);
         document.getElementById('g-lt').textContent = fmt(ltGlobal);
+      } else {
+        document.getElementById('g-lt').textContent = '—';
       }
     }
 
