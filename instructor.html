@@ -32,6 +32,12 @@
     .gm { text-align:center; background:#0d1117; border-radius:8px; padding:10px; }
     .gm .val { font-size:1.8rem; font-weight:700; color:#f0c040; }
     .gm .lbl { font-size:0.7rem; color:#888; margin-top:2px; }
+    /* countdown tile */
+    .gm.countdown-tile .val { font-size:2rem; font-weight:900; font-variant-numeric: tabular-nums; }
+    .gm.countdown-tile.running .val { color:#28a745; }
+    .gm.countdown-tile.warning .val { color:#d29922; }
+    .gm.countdown-tile.danger  .val { color:#e94560; animation: blink 0.8s step-end infinite; }
+    @keyframes blink { 50% { opacity:0.3; } }
     .equipos-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
     .equipo-card { background:#161b22; border-radius:10px; padding:16px; border:1px solid #30363d; }
     .equipo-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
@@ -144,6 +150,12 @@
       <label>Tarjetas/equipo</label>
       <div style="display:flex;gap:6px;align-items:center">
         <input type="number" id="inp-ntarjetas" value="40" min="5" max="60" style="width:65px">
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <label>Duración (min)</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="number" id="inp-duracion" value="8" min="1" max="60" style="width:65px">
         <button class="btn-orange" onclick="iniciarEtapa()">&#9654; Iniciar</button>
       </div>
     </div>
@@ -155,6 +167,10 @@
 
   <div class="global-metrics">
     <div class="gm"><div class="val" id="g-etapa">—</div><div class="lbl">Etapa</div></div>
+    <div class="gm countdown-tile" id="gm-countdown">
+      <div class="val" id="g-countdown">—</div>
+      <div class="lbl">⏱ Tiempo</div>
+    </div>
     <div class="gm"><div class="val" id="g-entregadas">0</div><div class="lbl">Entregadas</div></div>
     <div class="gm"><div class="val" id="g-wip">0</div><div class="lbl">WIP</div></div>
     <div class="gm"><div class="val" id="g-defectos">0</div><div class="lbl">Defectos</div></div>
@@ -217,6 +233,34 @@
 
     let sesion='', etapaActual=1;
     let globalData = {};
+    let countdownInterval = null;
+
+    // ── COUNTDOWN ──
+    function iniciarCountdown(tsInicio, duracionMs) {
+      if (countdownInterval) clearInterval(countdownInterval);
+      const tile = document.getElementById('gm-countdown');
+      const el   = document.getElementById('g-countdown');
+
+      function tick() {
+        const restante = duracionMs - (Date.now() - tsInicio);
+        tile.classList.remove('running','warning','danger');
+        if (restante <= 0) {
+          el.textContent = '⏱ TIEMPO';
+          tile.classList.add('danger');
+          clearInterval(countdownInterval);
+          return;
+        }
+        const totalSeg = Math.ceil(restante / 1000);
+        const m = Math.floor(totalSeg / 60);
+        const s = totalSeg % 60;
+        el.textContent = m + ':' + String(s).padStart(2,'0');
+        if (restante <= 60000)       tile.classList.add('danger');
+        else if (restante <= 120000) tile.classList.add('warning');
+        else                         tile.classList.add('running');
+      }
+      tick();
+      countdownInterval = setInterval(tick, 500);
+    }
 
     window.showTab = function(id, el) {
       document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
@@ -232,6 +276,10 @@
       onValue(ref(db,`sesiones/${sesion}`), snap => {
         globalData = snap.val()||{};
         etapaActual = globalData.etapaActiva||1;
+        // Reanudar countdown si ya había uno activo
+        if (globalData.tsInicio && globalData.duracionMs) {
+          iniciarCountdown(globalData.tsInicio, globalData.duracionMs);
+        }
         renderAll(globalData);
         renderTiempos(globalData);
         renderVSM(globalData);
@@ -247,6 +295,8 @@
     window.iniciarEtapa = async function() {
       if (!sesion) { alert('Conecta primero.'); return; }
       const n = parseInt(document.getElementById('inp-ntarjetas').value)||40;
+      const durMin = parseFloat(document.getElementById('inp-duracion').value)||8;
+      const duracionMs = Math.round(durMin * 60 * 1000);
       const lote = LOTE[etapaActual];
       const removes = [];
       for (let eq=1;eq<=6;eq++) {
@@ -255,8 +305,11 @@
           {entregadas:0, wip:0, defectos:0, correcciones:0}));
       }
       await Promise.all(removes);
-      const updates={};
       const tsInicio = Date.now();
+      const updates={};
+      // Guardar timer en Firebase para que otras pantallas lo lean
+      updates[`sesiones/${sesion}/tsInicio`]   = tsInicio;
+      updates[`sesiones/${sesion}/duracionMs`] = duracionMs;
       for (let eq=1;eq<=6;eq++) {
         for (let i=1;i<=n;i++) {
           const id=`t${String(i).padStart(3,'0')}`;
@@ -266,14 +319,18 @@
         }
       }
       await update(ref(db),updates);
-      alert(`✅ Etapa ${etapaActual} iniciada con ${n} tarjetas.`);
+      iniciarCountdown(tsInicio, duracionMs);
+      alert(`✅ Etapa ${etapaActual} iniciada con ${n} tarjetas — ${durMin} min.`);
     };
 
     window.resetSesion = async function() {
       if (!sesion) return;
       if (!confirm('¿Resetear toda la sesión?')) return;
+      if (countdownInterval) { clearInterval(countdownInterval); countdownInterval=null; }
       await remove(ref(db,`sesiones/${sesion}`));
       document.getElementById('g-etapa').textContent      = '—';
+      document.getElementById('g-countdown').textContent  = '—';
+      document.getElementById('gm-countdown').className   = 'gm countdown-tile';
       document.getElementById('g-entregadas').textContent = '0';
       document.getElementById('g-wip').textContent        = '0';
       document.getElementById('g-defectos').textContent   = '0';
@@ -492,7 +549,6 @@
       const equipos=data.equipos||{}, etapa=data.etapaActiva||1;
       document.getElementById('g-etapa').textContent=ETAPA_NOMBRE[etapa]||'—';
 
-      // Mostrar/ocultar bloque global de Correcciones
       const mostrarCorr = etapa >= 3;
       document.getElementById('gm-correcciones').style.display = mostrarCorr ? '' : 'none';
 
@@ -521,7 +577,6 @@
         const jugHtml=Object.values(jugadores).map(j=>`<span class="jugador-badge" style="border-left-color:${COLORES[j.rol]||'#888'}">${j.nombre||j.rol}</span>`).join('');
         const scoreColor=avgScore===null?'#888':avgScore>=95?'#28a745':avgScore>=70?'#d29922':'#e94560';
 
-        // Métrica Correcciones solo en etapa 3
         const corrCell = mostrarCorr
           ? `<div class="eq-metric"><div class="val" style="color:#d29922">${correcciones}</div><div class="lbl">Correcciones</div></div>`
           : '';
